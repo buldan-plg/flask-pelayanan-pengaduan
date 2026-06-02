@@ -1,0 +1,153 @@
+{% extends 'layout/templates.html' %} {% block content %}
+<div class="card card-success">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-plus"></i> {{title}}</h3>
+  </div>
+  <form id="form" method="post">
+    <div class="card-body">
+      <!--  -->
+      <div class="form-group">
+        <label for="nama">Nama</label>
+        <input
+          type="text"
+          name="nama"
+          id="nama"
+          class="form-control"
+          placeholder="Enter name....."
+        />
+      </div>
+      <!--  -->
+      <div class="form-group">
+        <label for="email">email</label>
+        <input
+          type="email"
+          name="email"
+          id="email"
+          class="form-control"
+          placeholder="Enter email....."
+        />
+      </div>
+      <!--  -->
+      <div class="form-group">
+        <label for="kontak">Kontak</label>
+        <input
+          type="number"
+          name="kontak"
+          id="kontak"
+          class="form-control"
+          placeholder="Enter contact....."
+        />
+      </div>
+      <!--  -->
+      <div class="form-group">
+        <label for="email">Password</label>
+        <input
+          type="password"
+          name="password"
+          id="password"
+          class="form-control"
+          placeholder="Enter password....."
+        />
+      </div>
+      <!--  -->
+      <div class="form-group">
+        <label for="email">Role</label>
+        <select name="role" class="form-control">
+          <option value="">Select role....</option>
+          <option value="admin">Admin</option>
+          <option value="petugas">Petugas</option>
+          <option value="warga">Warga</option>
+        </select>
+      </div>
+      <!--  -->
+    </div>
+    <div class="card-footer">
+      <!--  -->
+      <button type="button" id="saveBtn" class="btn btn-primary">
+        <i class="fas fa-save"></i> Simpan
+      </button>
+      <!--  -->
+      <a href="/admin/users" class="btn btn-secondary">
+        <i class="fas fa-reply"></i> Kembali
+      </a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+<!--  -->
+{% block js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("form");
+    const saveBtn = document.getElementById("saveBtn");
+
+    function setLoading(on) {
+      if (saveBtn) {
+        saveBtn.disabled = on;
+        saveBtn.innerHTML = on
+          ? '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'
+          : '<i class="fas fa-save"></i> Simpan';
+      }
+    }
+
+    function submitPayload() {
+      const nama = document.getElementById("nama").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const kontak = document.getElementById("kontak").value.trim();
+      const password = document.getElementById("password").value;
+      const role = form.querySelector('select[name="role"]').value;
+
+      if (!nama) {
+        if (window.toastr) toastr.error("Nama wajib diisi");
+        return;
+      }
+      if (!password) {
+        if (window.toastr) toastr.error("Password wajib diisi");
+        return;
+      }
+      if (!role) {
+        if (window.toastr) toastr.error("Role belum dipilih");
+        return;
+      }
+
+      const payload = { nama, email, kontak, password, role, status: 1 };
+      setLoading(true);
+
+      fetch("/api/users/insert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          setLoading(false);
+          if (window.toastr)
+            toastr.success(data.message || "Berhasil disimpan");
+          setTimeout(() => (window.location.href = "/admin/users"), 800);
+        })
+        .catch((err) => {
+          setLoading(false);
+          console.error("Save failed", err);
+          if (window.toastr) toastr.error("Gagal menyimpan data");
+        });
+    }
+
+    if (saveBtn) {
+      saveBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        submitPayload();
+      });
+    }
+
+    // ensure Enter key submits via JS and not native form submit
+    if (form) {
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        submitPayload();
+      });
+      form.setAttribute("action", "javascript:void(0);");
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends 'layout/templates.html' %}
+
+<!--  -->
+{% block content %}
+<!--  -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-table"></i> {{title}}</h3>
+    <div class="card-tools">
+      <a href="" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Tambah data
+      </a>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="example1" class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <td>No.</td>
+            <td>Nama</td>
+            <td>Kontak</td>
+            <td>Unit kerja</td>
+            <td>Jabatan</td>
+            <td>Status</td>
+            <td>Aksi</td>
+          </tr>
+        </thead>
+        <tbody id="tBody">
+          <!--  -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+<!-- script -->
+{% block js%}
+<!--  -->
+<script>
+  fetch("/api/petugas")
+    .then((response) => response.json())
+    .then((petugas) => {
+      //
+
+      const tableBody = document.getElementById("tBody");
+      //   console.log(petugas);
+
+      petugas.forEach((e, index) => {
+        const tr = document.createElement("tr");
+        const statusRaw =
+          e.status !== undefined && e.status !== null ? String(e.status) : "";
+        const isActive = /^(1|true|active|aktif|on|enabled)$/i.test(
+          statusRaw.trim(),
+        );
+
+        const statusClass = isActive
+          ? "badge badge-success"
+          : "badge badge-danger";
+        const statusText = statusRaw || "—";
+
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${e.nama || ""}</td>
+          <td>${e.kontak || ""}</td>
+          <td>${e.unit_kerja || ""}</td>
+          <td>${e.jabatan || ""}</td>
+          <td><span class="${statusClass}">${statusText}</span></td>
+          <td>
+              <a href="/admin/petugas/edit/${e.id_petugas}" class="btn btn-sm btn-warning">
+                  <i class="fas fa-edit"></i>
+              </a>
+              <button 
+                class="btn btn-sm btn-danger btn-delete" 
+                data-id="${e.id_petugas}">
+                <i class="fas fa-trash"></i>
+            </button>
+          </td>
+          `;
+        tableBody.appendChild(tr);
+      });
+
+      //
+      if (window.jQuery && $.fn && $.fn.DataTable) {
+        if ($.fn.DataTable.isDataTable("#example1")) {
+          $("#example1").DataTable().clear().destroy();
+        }
+        $("#example1").DataTable({
+          responsive: true,
+          autoWidth: false,
+        });
+      }
+    })
+    .catch((err) => {
+      console.log("Gagal memuat data petugas.", err);
+    });
+
+  document.addEventListener("click", function (e) {
+    const btn = e.target.closest(".btn-delete");
+    if (!btn) return;
+
+    const userId = btn.dataset.id;
+    if (!userId) return;
+
+    // Konfirmasi sebelum hapus
+    if (!confirm("Yakin ingin menghapus pengguna ini?")) return;
+
+    // Set loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    fetch(`/api/petugas/${userId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (window.toastr) toastr.success(data.message || "Berhasil dihapus");
+
+        // Hapus baris dari tabel tanpa reload
+        const row = btn.closest("tr");
+        if (row) row.remove();
+      })
+      .catch((err) => {
+        console.error("Delete failed:", err);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash"></i>';
+        if (window.toastr) toastr.error("Gagal menghapus data");
+      });
+  });
+</script>
+{% endblock %}

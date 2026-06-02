@@ -1,0 +1,341 @@
+{% extends 'layout/templates.html' %} {% block content %}
+
+<div class="card card-outline card-primary">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-list-alt mr-1"></i> {{ title }}</h3>
+    <div class="card-tools">
+      <a href="/warga/pengaduan/buat" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus-circle mr-1"></i> Buat Pengaduan
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter cepat -->
+  <div class="card-body pb-0">
+    <div class="row align-items-end">
+      <div class="col-md-4 col-sm-6">
+        <div class="form-group mb-2">
+          <select id="f-status" class="form-control form-control-sm">
+            <option value="">Semua Status</option>
+          </select>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="form-group mb-2">
+          <input
+            type="text"
+            id="f-cari"
+            class="form-control form-control-sm"
+            placeholder="Cari judul pengaduan..."
+          />
+        </div>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <div class="form-group mb-2">
+          <button id="btn-filter" class="btn btn-primary btn-sm btn-block">
+            <i class="fas fa-search"></i> Cari
+          </button>
+        </div>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <div class="form-group mb-2">
+          <button id="btn-reset" class="btn btn-default btn-sm btn-block">
+            <i class="fas fa-undo"></i> Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab status cepat -->
+    <ul class="nav nav-tabs border-bottom-0" id="tab-status">
+      <li class="nav-item">
+        <a class="nav-link active tab-link" data-status="" href="#">
+          Semua <span class="badge badge-secondary ml-1" id="b-semua">0</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link tab-link" data-status="MASUK" href="#">
+          Menunggu <span class="badge badge-primary ml-1" id="b-masuk">0</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link tab-link" data-status="PROSES" href="#">
+          Diproses <span class="badge badge-warning ml-1" id="b-proses">0</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link tab-link" data-status="SELESAI" href="#">
+          Selesai <span class="badge badge-success ml-1" id="b-selesai">0</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link tab-link" data-status="DITOLAK" href="#">
+          Ditolak <span class="badge badge-danger ml-1" id="b-ditolak">0</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Daftar kartu pengaduan -->
+  <div class="card-body" id="list-pengaduan">
+    <div class="text-center text-muted py-4">
+      <i class="fas fa-spinner fa-spin"></i> Memuat...
+    </div>
+  </div>
+
+  <!-- Paginasi -->
+  <div class="card-footer clearfix">
+    <div class="float-left small text-muted" id="info-hal"></div>
+    <ul class="pagination pagination-sm float-right mb-0" id="paginasi"></ul>
+  </div>
+</div>
+
+{% endblock %} {% block js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const PRIO = {
+      1: { label: "Rendah", cls: "badge-secondary" },
+      2: { label: "Sedang", cls: "badge-warning" },
+      3: { label: "Tinggi", cls: "badge-danger" },
+    };
+
+    function fmtTgl(str) {
+      if (!str) return "—";
+      return new Date(str).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    }
+
+    let page = 1,
+      perPage = 8,
+      total = 0;
+
+    /* ── isi dropdown status ── */
+    fetch("/api/laporan/filter-options")
+      .then((r) => r.json())
+      .then(({ status }) => {
+        const sel = document.getElementById("f-status");
+        status.forEach((s) => {
+          sel.insertAdjacentHTML(
+            "beforeend",
+            `<option value="${s.kode}">${s.nama}</option>`,
+          );
+        });
+      });
+
+    /* ── badge counter ── */
+    function loadBadges() {
+      fetch("/api/warga/pengaduan/counter")
+        .then((r) => r.json())
+        .then((d) => {
+          document.getElementById("b-semua").textContent = d.semua ?? 0;
+          document.getElementById("b-masuk").textContent = d.MASUK ?? 0;
+          document.getElementById("b-proses").textContent = d.PROSES ?? 0;
+          document.getElementById("b-selesai").textContent = d.SELESAI ?? 0;
+          document.getElementById("b-ditolak").textContent = d.DITOLAK ?? 0;
+        });
+    }
+
+    /* ── load list ── */
+    function loadList() {
+      const cont = document.getElementById("list-pengaduan");
+      cont.innerHTML = `<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i></div>`;
+
+      const params = new URLSearchParams({
+        status: document.getElementById("f-status").value,
+        cari: document.getElementById("f-cari").value,
+        page,
+        per_page: perPage,
+      });
+
+      fetch(`/api/warga/pengaduan?${params}`)
+        .then((r) => r.json())
+        .then(({ data, total: tot }) => {
+          total = tot;
+          cont.innerHTML = "";
+
+          if (!data.length) {
+            cont.innerHTML = `
+            <div class="text-center py-5">
+              <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+              <p class="text-muted">Tidak ada pengaduan ditemukan.</p>
+              <a href="/warga/pengaduan/buat" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus-circle mr-1"></i> Buat Pengaduan Baru
+              </a>
+            </div>`;
+            renderPagination();
+            renderInfo();
+            return;
+          }
+
+          data.forEach((p) => {
+            const prio = PRIO[p.prioritas] || PRIO[2];
+            cont.insertAdjacentHTML(
+              "beforeend",
+              `
+            <div class="card card-body mb-3 shadow-sm border-left border-3"
+                 style="border-left-color:${p.warna_status} !important;">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                  <div class="d-flex align-items-center mb-1 flex-wrap">
+                    <a href="/warga/pengaduan/${p.id}"
+                       class="font-weight-bold text-dark mr-2 h6 mb-0">
+                      ${p.judul}
+                    </a>
+                    <span class="badge ${prio.cls} mr-1">${prio.label}</span>
+                    <span class="badge badge-secondary">${p.kategori}</span>
+                  </div>
+                  <div class="text-muted small mb-2">
+                    ${p.lokasi ? `<i class="fas fa-map-marker-alt mr-1"></i>${p.lokasi} &nbsp;·&nbsp;` : ""}
+                    <i class="fas fa-calendar-alt mr-1"></i>${fmtTgl(p.dibuat_pada)}
+                    ${p.jumlah_komentar ? `&nbsp;·&nbsp;<i class="fas fa-comment mr-1"></i>${p.jumlah_komentar} komentar` : ""}
+                    ${p.jumlah_lampiran ? `&nbsp;·&nbsp;<i class="fas fa-paperclip mr-1"></i>${p.jumlah_lampiran} lampiran` : ""}
+                  </div>
+                  <!-- Mini timeline -->
+                  <div class="d-flex align-items-center flex-wrap">
+                    ${renderMiniTimeline(p.status_kode)}
+                  </div>
+                </div>
+                <div class="text-right ml-3">
+                  <span class="badge px-2 py-1 mb-2 d-block"
+                        style="background:${p.warna_status};color:#fff;font-size:.8rem;">
+                    ${p.status}
+                  </span>
+                  <a href="/warga/pengaduan/${p.id}" class="btn btn-xs btn-info">
+                    <i class="fas fa-eye mr-1"></i> Detail
+                  </a>
+                </div>
+              </div>
+            </div>`,
+            );
+          });
+
+          renderPagination();
+          renderInfo();
+        })
+        .catch(() => {
+          cont.innerHTML = `<div class="text-center text-danger py-4">Gagal memuat data.</div>`;
+        });
+    }
+
+    function renderMiniTimeline(kode) {
+      const steps = [
+        { kode: "MASUK", label: "Masuk", warna: "#3B82F6" },
+        { kode: "VERIFIKASI", label: "Verifikasi", warna: "#8B5CF6" },
+        { kode: "PROSES", label: "Proses", warna: "#F59E0B" },
+        { kode: "SELESAI", label: "Selesai", warna: "#10B981" },
+      ];
+      if (kode === "DITOLAK") {
+        return `<span class="badge badge-danger">Ditolak</span>`;
+      }
+      const idxAktif = steps.findIndex((s) => s.kode === kode);
+      return steps
+        .map((s, i) => {
+          const done = i <= idxAktif;
+          const aktif = i === idxAktif;
+          const color = done ? s.warna : "#D1D5DB";
+          return `
+        <div class="d-flex align-items-center mr-1">
+          <span class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                style="width:20px;height:20px;background:${color};
+                       border:${aktif ? "2px solid " + s.warna : "none"};
+                       font-size:9px;color:#fff;">
+            ${done ? '<i class="fas fa-check"></i>' : i + 1}
+          </span>
+          <span class="ml-1 small" style="color:${color};font-size:.7rem;">${s.label}</span>
+          ${i < steps.length - 1 ? `<span class="mx-1 text-muted">›</span>` : ""}
+        </div>`;
+        })
+        .join("");
+    }
+
+    /* ── paginasi ── */
+    function renderPagination() {
+      const totalPages = Math.ceil(total / perPage);
+      const ul = document.getElementById("paginasi");
+      ul.innerHTML = "";
+      if (totalPages <= 1) return;
+
+      const add = (label, p, disabled, active) => {
+        ul.insertAdjacentHTML(
+          "beforeend",
+          `
+        <li class="page-item ${disabled ? "disabled" : ""} ${active ? "active" : ""}">
+          <a class="page-link" href="#" data-page="${p}">${label}</a>
+        </li>`,
+        );
+      };
+
+      add("«", 1, page === 1);
+      add("‹", page - 1, page === 1);
+      let s = Math.max(1, page - 2),
+        e = Math.min(totalPages, page + 2);
+      for (let i = s; i <= e; i++) add(i, i, false, i === page);
+      add("›", page + 1, page === totalPages);
+      add("»", totalPages, page === totalPages);
+
+      ul.querySelectorAll("[data-page]").forEach((a) => {
+        a.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          const p = +a.dataset.page;
+          if (p < 1 || p > totalPages || p === page) return;
+          page = p;
+          loadList();
+        });
+      });
+    }
+
+    function renderInfo() {
+      const from = total ? (page - 1) * perPage + 1 : 0;
+      const to = Math.min(page * perPage, total);
+      document.getElementById("info-hal").textContent =
+        `Menampilkan ${from}–${to} dari ${total} pengaduan`;
+    }
+
+    /* ── tab ── */
+    document.querySelectorAll(".tab-link").forEach((a) => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        document
+          .querySelectorAll(".tab-link")
+          .forEach((x) => x.classList.remove("active"));
+        a.classList.add("active");
+        document.getElementById("f-status").value = a.dataset.status;
+        page = 1;
+        loadList();
+      });
+    });
+
+    /* ── filter ── */
+    document.getElementById("btn-filter").addEventListener("click", () => {
+      page = 1;
+      loadList();
+    });
+    document.getElementById("f-cari").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        page = 1;
+        loadList();
+      }
+    });
+    document.getElementById("btn-reset").addEventListener("click", () => {
+      document.getElementById("f-status").value = "";
+      document.getElementById("f-cari").value = "";
+      document
+        .querySelectorAll(".tab-link")
+        .forEach((x) => x.classList.remove("active"));
+      document
+        .querySelector(".tab-link[data-status='']")
+        .classList.add("active");
+      page = 1;
+      loadList();
+      loadBadges();
+    });
+
+    /* ── init ── */
+    loadBadges();
+    loadList();
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends 'layout/templates.html' %} {% block content %}
+<div class="card card-warning">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-edit"></i> {{title}}</h3>
+  </div>
+  <form id="form" method="post" data-user-id="{{ id }}">
+    <div class="card-body">
+      <!--  -->
+      <div class="form-group">
+        <label for="nama">Nama</label>
+        <input
+          type="text"
+          name="nama"
+          id="nama"
+          class="form-control"
+          placeholder="Enter name....."
+        />
+      </div>
+      <!--  -->
+      <div class="form-group">
+        <label for="email">email</label>
+        <input
+          type="email"
+          name="email"
+          id="email"
+          class="form-control"
+          placeholder="Kosongkan jika tidak ingin diganti....."
+        />
+      </div>
+      <!--  -->
+      <div class="form-group">
+        <label for="kontak">Kontak</label>
+        <input
+          type="number"
+          name="kontak"
+          id="kontak"
+          class="form-control"
+          placeholder="Enter contact....."
+        />
+      </div>
+      <!--  -->
+      <div class="form-group">
+        <label for="email">Password</label>
+        <input
+          type="password"
+          name="password"
+          id="password"
+          class="form-control"
+          placeholder="Kosongkan jika tidak ingin diganti....."
+        />
+      </div>
+      <!--  -->
+      <div class="form-group">
+        <label for="email">Role</label>
+        <select name="role" class="form-control">
+          <option value="">Select role....</option>
+          <option value="admin">Admin</option>
+          <option value="petugas">Petugas</option>
+          <option value="warga">Warga</option>
+        </select>
+      </div>
+      <!--  -->
+    </div>
+    <div class="card-footer">
+      <!--  -->
+      <button type="button" id="saveBtn" class="btn btn-primary">
+        <i class="fas fa-save"></i> Simpan
+      </button>
+      <!--  -->
+      <a href="/admin/users" class="btn btn-secondary">
+        <i class="fas fa-reply"></i> Kembali
+      </a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+<!-- script -->
+{% block js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("form");
+    const saveBtn = document.getElementById("saveBtn");
+
+    function setLoading(on) {
+      if (saveBtn) {
+        saveBtn.disabled = on;
+        saveBtn.innerHTML = on
+          ? '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'
+          : '<i class="fas fa-save"></i> Simpan';
+      }
+    }
+
+    function submitPayload() {
+      const nama = document.getElementById("nama").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const kontak = document.getElementById("kontak").value.trim();
+      const password = document.getElementById("password").value;
+      const role = form.querySelector('select[name="role"]').value;
+
+      if (!nama) {
+        if (window.toastr) toastr.error("Nama wajib diisi");
+        return;
+      }
+      if (!role) {
+        if (window.toastr) toastr.error("Role belum dipilih");
+        return;
+      }
+
+      const payload = { nama, email, kontak, role };
+      // only include password if user entered a new one
+      if (password) payload.password = password;
+
+      const userId =
+        form.dataset.userId ||
+        new URLSearchParams(window.location.search).get("id");
+      if (!userId) {
+        if (window.toastr) toastr.error("User ID tidak ditemukan");
+        return;
+      }
+
+      setLoading(true);
+
+      // Use PUT to update existing user; backend author will implement logic
+      fetch(`/api/users/${userId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          setLoading(false);
+          if (window.toastr)
+            toastr.success(data.message || "Berhasil diperbarui");
+          setTimeout(() => (window.location.href = "/admin/users"), 800);
+        })
+        .catch((err) => {
+          setLoading(false);
+          console.error("Update failed", err);
+          if (window.toastr) toastr.error("Gagal memperbarui data");
+        });
+    }
+
+    if (saveBtn) {
+      saveBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        submitPayload();
+      });
+    }
+
+    // load user data from API and populate form
+    (function loadUser() {
+      const userId =
+        form.dataset.userId ||
+        new URLSearchParams(window.location.search).get("id");
+      if (!userId) {
+        console.error("User id not found in URL or data attribute");
+        return;
+      }
+
+      fetch(`/api/users/${userId}`)
+        .then((res) => res.json())
+        .then((user) => {
+          if (!user) return;
+          document.getElementById("nama").value = user.nama || "";
+          document.getElementById("email").value = user.email || "";
+          document.getElementById("kontak").value = user.kontak || "";
+          // do NOT populate password for security
+          if (user.role) {
+            const sel = form.querySelector('select[name="role"]');
+            if (sel) sel.value = user.role;
+          }
+        })
+        .catch((err) => console.error("Failed to load user", err));
+    })();
+
+    // ensure Enter key submits via JS and not native form submit
+    if (form) {
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        submitPayload();
+      });
+      form.setAttribute("action", "javascript:void(0);");
+    }
+  });
+</script>
+{% endblock %}

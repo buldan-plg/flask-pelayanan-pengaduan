@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Masyarakat Mengadu | {{ title or 'Login' }}</title>
+
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='dist/img/logo.jpg') }}"
+      type="image/jpeg"
+    />
+
+    <!-- Google Font -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback"
+    />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='plugins/fontawesome-free/css/all.min.css') }}"
+    />
+
+    <!-- iCheck -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='plugins/icheck-bootstrap/icheck-bootstrap.min.css') }}"
+    />
+
+    <!-- AdminLTE -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='dist/css/adminlte.min.css') }}"
+    />
+
+    <!-- Toastr -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='plugins/toastr/toastr.min.css') }}"
+    />
+
+    {% block css %}{% endblock %}
+  </head>
+
+  <body class="hold-transition login-page">
+    {% with message = get_flashed_messages(with_categories = True) %} {% if
+    messages %} {% for category, message in messages %}
+    <div
+      class="flash-data"
+      data-type="{{category}}"
+      data-message="{{message}}"
+    ></div>
+    {%endfor%} {%endif%} {%endwith%}
+
+    <div class="login-box" style="min-height: 463.333px">
+      {% block content %} {%endblock%}
+    </div>
+
+    <!-- jQuery -->
+    <script src="{{ url_for('static', filename='plugins/jquery/jquery.min.js') }}"></script>
+
+    <!-- Bootstrap -->
+    <script src="{{ url_for('static', filename='plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+
+    <!-- AdminLTE -->
+    <script src="{{ url_for('static', filename='dist/js/adminlte.min.js') }}"></script>
+
+    <!-- Toastr -->
+    <script src="{{ url_for('static', filename='plugins/toastr/toastr.min.js') }}"></script>
+
+    <!-- TOASTR CONFIG -->
+    <script>
+      toastr.options = {
+        closeButton: true,
+        progressBar: true,
+        positionClass: "toast-top-right",
+        timeOut: 3500,
+        showMethod: "fadeIn",
+        hideMethod: "fadeOut",
+      };
+    </script>
+
+    <!-- FLASH HANDLER -->
+    <script>
+      $(function () {
+        $(".flash-data").each(function () {
+          let type = $(this).data("type");
+          let message = $(this).data("message");
+
+          if (type === "danger") type = "error";
+
+          toastr[type](message);
+        });
+      });
+    </script>
+
+    {% block js %}{% endblock %}
+  </body>
+</html>

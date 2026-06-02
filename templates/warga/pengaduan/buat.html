@@ -1,0 +1,421 @@
+{% extends 'layout/templates.html' %} {% block content %}
+
+<div class="card card-outline card-primary">
+  <div class="card-header">
+    <h3 class="card-title">
+      <i class="fas fa-plus-circle mr-1"></i> {{ title }}
+    </h3>
+  </div>
+
+  <div class="card-body">
+    <!-- Judul -->
+    <div class="form-group">
+      <label class="font-weight-bold">
+        Judul Pengaduan <span class="text-danger">*</span>
+      </label>
+      <input
+        type="text"
+        id="judul"
+        class="form-control"
+        placeholder="Contoh: Jalan berlubang di depan SDN 01..."
+        maxlength="200"
+      />
+      <small class="text-muted">
+        <span id="hitung-judul">0</span>/200 karakter
+      </small>
+    </div>
+
+    <!-- Kategori -->
+    <div class="form-group">
+      <label class="font-weight-bold">
+        Kategori <span class="text-danger">*</span>
+      </label>
+      <select id="kategori" class="form-control">
+        <option value="">— Pilih Kategori —</option>
+      </select>
+    </div>
+
+    <!-- Lokasi -->
+    <div class="form-group">
+      <label class="font-weight-bold">
+        Lokasi <span class="text-danger">*</span>
+      </label>
+      <input
+        type="text"
+        id="lokasi"
+        class="form-control"
+        placeholder="Contoh: Jl. Merdeka No.10, Kelurahan Suka Maju..."
+      />
+    </div>
+
+    <!-- Deskripsi -->
+    <div class="form-group">
+      <label class="font-weight-bold">
+        Deskripsi <span class="text-danger">*</span>
+      </label>
+      <textarea
+        id="deskripsi"
+        class="form-control"
+        rows="5"
+        placeholder="Jelaskan secara detail pengaduan Anda. Sertakan kapan kejadian, kondisi saat ini, dan dampaknya..."
+        maxlength="2000"
+      ></textarea>
+      <small class="text-muted">
+        <span id="hitung-deskripsi">0</span>/2000 karakter
+      </small>
+    </div>
+
+    <!-- Prioritas -->
+    <div class="form-group">
+      <label class="font-weight-bold">Tingkat Urgensi</label>
+      <div class="d-flex gap-2">
+        <div class="flex-fill">
+          <input
+            type="radio"
+            name="prioritas"
+            id="p-rendah"
+            value="1"
+            class="d-none"
+            checked
+          />
+          <label
+            for="p-rendah"
+            class="btn btn-block btn-outline-secondary prio-label"
+            data-prio="1"
+          >
+            <i class="fas fa-circle mr-1"></i> Rendah
+          </label>
+        </div>
+        <div class="flex-fill">
+          <input
+            type="radio"
+            name="prioritas"
+            id="p-sedang"
+            value="2"
+            class="d-none"
+          />
+          <label
+            for="p-sedang"
+            class="btn btn-block btn-outline-warning prio-label"
+            data-prio="2"
+          >
+            <i class="fas fa-circle mr-1"></i> Sedang
+          </label>
+        </div>
+        <div class="flex-fill">
+          <input
+            type="radio"
+            name="prioritas"
+            id="p-tinggi"
+            value="3"
+            class="d-none"
+          />
+          <label
+            for="p-tinggi"
+            class="btn btn-block btn-outline-danger prio-label"
+            data-prio="3"
+          >
+            <i class="fas fa-fire mr-1"></i> Tinggi / Mendesak
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <hr />
+
+    <!-- Lampiran -->
+    <div class="form-group">
+      <label class="font-weight-bold">
+        <i class="fas fa-paperclip mr-1"></i> Lampiran
+        <small class="text-muted font-weight-normal"
+          >(opsional, maks. 5 file, 5MB per file)</small
+        >
+      </label>
+
+      <!-- Drop zone -->
+      <div
+        id="drop-zone"
+        class="border border-dashed rounded text-center py-4 px-3 mb-2"
+        style="
+          border-color: #ced4da !important;
+          cursor: pointer;
+          transition: background 0.2s;
+        "
+      >
+        <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2 d-block"></i>
+        <span class="text-muted">Seret file ke sini atau </span>
+        <label
+          for="input-file"
+          class="text-primary mb-0"
+          style="cursor: pointer"
+        >
+          klik untuk memilih
+        </label>
+        <input
+          type="file"
+          id="input-file"
+          class="d-none"
+          multiple
+          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+        />
+        <div class="text-muted small mt-1">
+          JPG, PNG, PDF, DOC, XLS — maks 5MB per file
+        </div>
+      </div>
+
+      <!-- Preview lampiran -->
+      <div id="preview-lampiran" class="d-flex flex-wrap gap-2"></div>
+    </div>
+  </div>
+
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <a href="/warga/dashboard" class="btn btn-default">
+      <i class="fas fa-arrow-left mr-1"></i> Kembali
+    </a>
+    <button id="btn-simpan" class="btn btn-primary px-4">
+      <i class="fas fa-paper-plane mr-1"></i> Kirim Pengaduan
+    </button>
+  </div>
+</div>
+
+<!-- Info box -->
+<div class="callout callout-info">
+  <h5><i class="fas fa-info-circle mr-1"></i> Informasi</h5>
+  <p class="mb-0">
+    Pengaduan yang telah dikirim akan diverifikasi oleh admin terlebih dahulu.
+    Pastikan informasi yang Anda berikan
+    <strong>lengkap dan akurat</strong>
+    agar proses penanganan dapat berjalan lebih cepat.
+  </p>
+</div>
+
+{% endblock %} {% block js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    /* ── populate kategori ── */
+    fetch("/api/laporan/filter-options")
+      .then((r) => r.json())
+      .then(({ kategori }) => {
+        const sel = document.getElementById("kategori");
+        kategori.forEach((k) => {
+          sel.insertAdjacentHTML(
+            "beforeend",
+            `<option value="${k.id}">${k.nama}</option>`,
+          );
+        });
+      });
+
+    /* ── hitung karakter ── */
+    function bindCounter(inputId, counterId) {
+      const el = document.getElementById(inputId);
+      const ct = document.getElementById(counterId);
+      el.addEventListener("input", () => {
+        ct.textContent = el.value.length;
+      });
+    }
+    bindCounter("judul", "hitung-judul");
+    bindCounter("deskripsi", "hitung-deskripsi");
+
+    /* ── prioritas toggle style ── */
+    document.querySelectorAll(".prio-label").forEach((lbl) => {
+      lbl.addEventListener("click", () => {
+        document
+          .querySelectorAll(".prio-label")
+          .forEach((l) => l.classList.remove("active"));
+        lbl.classList.add("active");
+      });
+    });
+    // set default aktif
+    document
+      .querySelector(".prio-label[data-prio='1']")
+      .classList.add("active");
+
+    /* ── drag & drop lampiran ── */
+    const dropZone = document.getElementById("drop-zone");
+    const inputFile = document.getElementById("input-file");
+    const previewEl = document.getElementById("preview-lampiran");
+    let fileList = []; // array of File objects
+
+    dropZone.addEventListener("click", () => inputFile.click());
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.style.background = "#f0f4ff";
+    });
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.style.background = "";
+    });
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.style.background = "";
+      tambahFile([...e.dataTransfer.files]);
+    });
+    inputFile.addEventListener("change", () => {
+      tambahFile([...inputFile.files]);
+      inputFile.value = ""; // reset agar bisa pilih file sama lagi
+    });
+
+    function tambahFile(files) {
+      const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+      const MAX_FILES = 5;
+
+      files.forEach((f) => {
+        if (fileList.length >= MAX_FILES) {
+          if (window.toastr) toastr.warning("Maksimal 5 file lampiran.");
+          return;
+        }
+        if (f.size > MAX_SIZE) {
+          if (window.toastr) toastr.error(`File "${f.name}" melebihi 5MB.`);
+          return;
+        }
+        // cek duplikat nama
+        if (fileList.find((x) => x.name === f.name && x.size === f.size))
+          return;
+        fileList.push(f);
+      });
+      renderPreview();
+    }
+
+    function renderPreview() {
+      previewEl.innerHTML = "";
+      fileList.forEach((f, i) => {
+        const isImg = f.type.startsWith("image/");
+        const wrap = document.createElement("div");
+        wrap.className = "position-relative mr-2 mb-2";
+        wrap.style = "width:90px;";
+
+        if (isImg) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            wrap.insertAdjacentHTML(
+              "afterbegin",
+              `
+            <img src="${e.target.result}"
+                 class="img-thumbnail" style="width:90px;height:70px;object-fit:cover;"
+                 title="${f.name}">`,
+            );
+          };
+          reader.readAsDataURL(f);
+        } else {
+          wrap.insertAdjacentHTML(
+            "afterbegin",
+            `
+          <div class="border rounded d-flex align-items-center justify-content-center bg-light"
+               style="width:90px;height:70px;" title="${f.name}">
+            <i class="fas fa-file fa-2x text-muted"></i>
+          </div>`,
+          );
+        }
+
+        wrap.insertAdjacentHTML(
+          "beforeend",
+          `
+        <div class="text-truncate small mt-1" style="font-size:.7rem;">${f.name}</div>
+        <button type="button"
+          class="btn btn-xs btn-danger position-absolute btn-hapus-file"
+          style="top:2px;right:2px;padding:1px 5px;"
+          data-index="${i}" title="Hapus">
+          &times;
+        </button>`,
+        );
+
+        previewEl.appendChild(wrap);
+      });
+
+      // event hapus
+      previewEl.querySelectorAll(".btn-hapus-file").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          fileList.splice(+btn.dataset.index, 1);
+          renderPreview();
+        });
+      });
+    }
+
+    /* ── validasi & kirim ── */
+    function setLoading(on) {
+      const btn = document.getElementById("btn-simpan");
+      btn.disabled = on;
+      btn.innerHTML = on
+        ? '<i class="fas fa-spinner fa-spin mr-1"></i> Mengirim...'
+        : '<i class="fas fa-paper-plane mr-1"></i> Kirim Pengaduan';
+    }
+
+    document
+      .getElementById("btn-simpan")
+      .addEventListener("click", async function () {
+        const judul = document.getElementById("judul").value.trim();
+        const kategori = document.getElementById("kategori").value;
+        const lokasi = document.getElementById("lokasi").value.trim();
+        const deskripsi = document.getElementById("deskripsi").value.trim();
+        const prioritas =
+          document.querySelector('input[name="prioritas"]:checked')?.value ||
+          "1";
+
+        // validasi
+        if (!judul) {
+          if (window.toastr) toastr.error("Judul pengaduan wajib diisi.");
+          document.getElementById("judul").focus();
+          return;
+        }
+        if (!kategori) {
+          if (window.toastr) toastr.error("Kategori wajib dipilih.");
+          document.getElementById("kategori").focus();
+          return;
+        }
+        if (!lokasi) {
+          if (window.toastr) toastr.error("Lokasi wajib diisi.");
+          document.getElementById("lokasi").focus();
+          return;
+        }
+        if (!deskripsi) {
+          if (window.toastr) toastr.error("Deskripsi wajib diisi.");
+          document.getElementById("deskripsi").focus();
+          return;
+        }
+
+        setLoading(true);
+
+        try {
+          // Kirim data pengaduan dulu
+          const res = await fetch("/api/warga/pengaduan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              judul,
+              kategori_id: kategori,
+              lokasi,
+              deskripsi,
+              prioritas: +prioritas,
+            }),
+          });
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.message || "Gagal menyimpan pengaduan.");
+          }
+
+          const pengaduanId = data.id;
+
+          // Upload lampiran jika ada
+          if (fileList.length > 0) {
+            const fd = new FormData();
+            fileList.forEach((f) => fd.append("files", f));
+
+            await fetch(`/api/warga/pengaduan/${pengaduanId}/lampiran`, {
+              method: "POST",
+              body: fd,
+            });
+          }
+
+          if (window.toastr) toastr.success("Pengaduan berhasil dikirim!");
+          setTimeout(() => {
+            window.location.href = `/warga/pengaduan/${pengaduanId}`;
+          }, 900);
+        } catch (err) {
+          setLoading(false);
+          if (window.toastr) toastr.error(err.message || "Terjadi kesalahan.");
+          console.error(err);
+        }
+      });
+  });
+</script>
+{% endblock %}

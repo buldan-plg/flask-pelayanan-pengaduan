@@ -1,0 +1,126 @@
+{%extends 'layout/templates.html'%} {%block content%}
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-table"></i> {{title}}</h3>
+    <div class="card-tools">
+      <a href="/admin/users/create" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Tambah Data
+      </a>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="example1" class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>Nama</th>
+            <th>E-mail</th>
+            <th>Kontak</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="example">
+          <!-- row table -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- script -->
+{%endblock%} {% block js %}
+<script>
+  fetch("/api/users")
+    .then((response) => response.json())
+    .then((users) => {
+      console.log(users);
+
+      const tableBody = document.getElementById("example");
+
+      users.forEach((user, index) => {
+        const tr = document.createElement("tr");
+        const statusRaw =
+          user.status !== undefined && user.status !== null
+            ? String(user.status)
+            : "";
+        const isActive = /^(1|true|active|aktif|on|enabled)$/i.test(
+          statusRaw.trim(),
+        );
+        const statusClass = isActive
+          ? "badge badge-success"
+          : "badge badge-danger";
+        const statusText = statusRaw || "—";
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${user.nama || ""}</td>
+          <td>${user.email || ""}</td>
+          <td>${user.kontak || ""}</td>
+          <td>${user.role || ""}</td>
+          <td><span class="${statusClass}">${statusText}</span></td>
+          <td>
+            <a href="/admin/users/edit/${user.id}" class="btn btn-sm btn-warning">
+                <i class="fas fa-edit"></i>
+            </a>
+            <button 
+                class="btn btn-sm btn-danger btn-delete" 
+                data-id="${user.id}">
+                <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      // Re-initialize DataTable after rows are loaded to avoid timing issues
+      if (window.jQuery && $.fn && $.fn.DataTable) {
+        if ($.fn.DataTable.isDataTable("#example1")) {
+          $("#example1").DataTable().clear().destroy();
+        }
+        $("#example1").DataTable({
+          responsive: true,
+          autoWidth: false,
+        });
+      }
+    })
+    .catch((err) => {
+      console.error("Failed to load users", err);
+    });
+
+  document.addEventListener("click", function (e) {
+    const btn = e.target.closest(".btn-delete");
+    if (!btn) return;
+
+    const userId = btn.dataset.id;
+    if (!userId) return;
+
+    // Konfirmasi sebelum hapus
+    if (!confirm("Yakin ingin menghapus pengguna ini?")) return;
+
+    // Set loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    fetch(`/api/users/${userId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (window.toastr) toastr.success(data.message || "Berhasil dihapus");
+
+        // Hapus baris dari tabel tanpa reload
+        const row = btn.closest("tr");
+        if (row) row.remove();
+      })
+      .catch((err) => {
+        console.error("Delete failed:", err);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash"></i>';
+        if (window.toastr) toastr.error("Gagal menghapus data");
+      });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,384 @@
+{% extends 'layout/templates.html' %} {% block content %}
+
+<!-- Filter -->
+<div class="card card-outline card-warning">
+  <div class="card-header">
+    <h3 class="card-title">
+      <i class="fas fa-filter mr-1"></i> Filter Pengaduan
+    </h3>
+    <div class="card-tools">
+      <button type="button" class="btn btn-tool" data-card-widget="collapse">
+        <i class="fas fa-minus"></i>
+      </button>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="row align-items-end">
+      <div class="col-md-3 col-sm-6">
+        <div class="form-group mb-0">
+          <label class="font-weight-bold">Status</label>
+          <select id="f-status" class="form-control form-control-sm">
+            <option value="">Semua Status</option>
+            <option value="VERIFIKASI">Diverifikasi</option>
+            <option value="PROSES">Diproses</option>
+            <option value="SELESAI">Selesai</option>
+          </select>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="form-group mb-0">
+          <label class="font-weight-bold">Kategori</label>
+          <select id="f-kategori" class="form-control form-control-sm">
+            <option value="">Semua Kategori</option>
+          </select>
+        </div>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <div class="form-group mb-0">
+          <label class="font-weight-bold">Prioritas</label>
+          <select id="f-prioritas" class="form-control form-control-sm">
+            <option value="">Semua</option>
+            <option value="3">Tinggi</option>
+            <option value="2">Sedang</option>
+            <option value="1">Rendah</option>
+          </select>
+        </div>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <div class="form-group mb-0">
+          <label class="font-weight-bold">Cari</label>
+          <input
+            type="text"
+            id="f-cari"
+            class="form-control form-control-sm"
+            placeholder="Judul..."
+          />
+        </div>
+      </div>
+      <div class="col-md-2 mt-2 mt-md-0">
+        <button id="btn-filter" class="btn btn-warning btn-sm btn-block mr-1">
+          <i class="fas fa-search"></i> Terapkan
+        </button>
+        <button id="btn-reset" class="btn btn-default btn-sm btn-block mt-1">
+          <i class="fas fa-undo"></i> Reset
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab navigasi status cepat -->
+<ul class="nav nav-tabs mb-0" id="tab-status" style="border-bottom: none">
+  <li class="nav-item">
+    <a class="nav-link active tab-link" data-status="" href="#">
+      Semua <span class="badge badge-secondary ml-1" id="badge-semua">0</span>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link tab-link" data-status="VERIFIKASI" href="#">
+      Perlu Ditangani
+      <span
+        class="badge ml-1"
+        style="background: #8b5cf6; color: #fff"
+        id="badge-verifikasi"
+        >0</span
+      >
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link tab-link" data-status="PROSES" href="#">
+      Sedang Diproses
+      <span class="badge badge-warning ml-1" id="badge-proses">0</span>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link tab-link" data-status="SELESAI" href="#">
+      Selesai <span class="badge badge-success ml-1" id="badge-selesai">0</span>
+    </a>
+  </li>
+</ul>
+
+<!-- Tabel Pengaduan -->
+<div class="card" style="border-top-left-radius: 0">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0" id="tabel-pengaduan">
+        <thead class="thead-light">
+          <tr>
+            <th style="width: 40px">No</th>
+            <th>Judul</th>
+            <th>Pelapor</th>
+            <th>Kategori</th>
+            <th>Lokasi</th>
+            <th>Prioritas</th>
+            <th>Status</th>
+            <th>Tgl Masuk</th>
+            <th style="width: 80px">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-pengaduan">
+          <tr>
+            <td colspan="9" class="text-center py-4">
+              <i class="fas fa-spinner fa-spin"></i> Memuat data...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-footer clearfix">
+    <div class="float-left" id="info-pagination"></div>
+    <ul class="pagination pagination-sm float-right mb-0" id="paginasi"></ul>
+  </div>
+</div>
+
+{% endblock %} {% block js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const PRIO = {
+      1: { label: "Rendah", cls: "badge-secondary" },
+      2: { label: "Sedang", cls: "badge-warning" },
+      3: { label: "Tinggi", cls: "badge-danger" },
+    };
+
+    function fmtTgl(str) {
+      if (!str) return "—";
+      return new Date(str).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    }
+
+    let page = 1,
+      perPage = 15,
+      totalRows = 0;
+
+    /* ── isi dropdown kategori ── */
+    fetch("/api/laporan/filter-options")
+      .then((r) => r.json())
+      .then(({ kategori }) => {
+        const selK = document.getElementById("f-kategori");
+        kategori.forEach((k) =>
+          selK.insertAdjacentHTML(
+            "beforeend",
+            `<option value="${k.id}">${k.nama}</option>`,
+          ),
+        );
+      });
+
+    /* ── counter badge tab ── */
+    function loadBadges() {
+      fetch("/api/petugas/pengaduan/counter")
+        .then((r) => r.json())
+        .then((d) => {
+          document.getElementById("badge-semua").textContent = d.semua ?? 0;
+          document.getElementById("badge-verifikasi").textContent =
+            d.VERIFIKASI ?? 0;
+          document.getElementById("badge-proses").textContent = d.PROSES ?? 0;
+          document.getElementById("badge-selesai").textContent = d.SELESAI ?? 0;
+        });
+    }
+
+    /* ── ambil data tabel ── */
+    function loadTable() {
+      const tbody = document.getElementById("tbody-pengaduan");
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>`;
+
+      const params = new URLSearchParams({
+        status: document.getElementById("f-status").value,
+        kategori: document.getElementById("f-kategori").value,
+        prioritas: document.getElementById("f-prioritas").value,
+        cari: document.getElementById("f-cari").value,
+        page,
+        per_page: perPage,
+      });
+
+      fetch(`/api/petugas/pengaduan?${params}`)
+        .then((r) => r.json())
+        .then(({ data, total }) => {
+          totalRows = total;
+          tbody.innerHTML = "";
+
+          if (!data.length) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">Tidak ada pengaduan yang ditugaskan.</td></tr>`;
+            renderPagination();
+            return;
+          }
+
+          data.forEach((p, i) => {
+            const prio = PRIO[p.prioritas] || {
+              label: "—",
+              cls: "badge-secondary",
+            };
+            const offset = (page - 1) * perPage;
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${offset + i + 1}</td>
+              <td>
+                <a href="/petugas/pengaduan/${p.id}" class="font-weight-bold text-dark">
+                  ${p.judul}
+                </a>
+                ${p.jumlah_lampiran ? `<span class="ml-1 text-muted"><i class="fas fa-paperclip fa-xs"></i>${p.jumlah_lampiran}</span>` : ""}
+                ${p.jumlah_komentar ? `<span class="ml-1 text-muted"><i class="fas fa-comment fa-xs"></i>${p.jumlah_komentar}</span>` : ""}
+              </td>
+              <td>${p.pelapor}</td>
+              <td><span class="badge badge-secondary">${p.kategori}</span></td>
+              <td class="text-truncate" style="max-width:130px;" title="${p.lokasi || ""}">${p.lokasi || "—"}</td>
+              <td><span class="badge ${prio.cls}">${prio.label}</span></td>
+              <td>
+                <span class="badge" style="background:${p.warna_status};color:#fff;">
+                  ${p.status}
+                </span>
+              </td>
+              <td>${fmtTgl(p.dibuat_pada)}</td>
+              <td>
+                <a href="/petugas/pengaduan/${p.id}" class="btn btn-xs btn-info" title="Detail">
+                  <i class="fas fa-eye"></i>
+                </a>
+                ${
+                  p.status_kode === "VERIFIKASI"
+                    ? `<button class="btn btn-xs btn-warning btn-proses" data-id="${p.id}" title="Tandai Diproses">
+                         <i class="fas fa-spinner"></i>
+                       </button>`
+                    : ""
+                }
+                ${
+                  p.status_kode === "PROSES"
+                    ? `<button class="btn btn-xs btn-success btn-selesai" data-id="${p.id}" title="Tandai Selesai">
+                         <i class="fas fa-check"></i>
+                       </button>`
+                    : ""
+                }
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          renderPagination();
+          renderInfo();
+        })
+        .catch(() => {
+          tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">Gagal memuat data.</td></tr>`;
+        });
+    }
+
+    /* ── paginasi ── */
+    function renderPagination() {
+      const totalPages = Math.ceil(totalRows / perPage);
+      const ul = document.getElementById("paginasi");
+      ul.innerHTML = "";
+
+      if (totalPages <= 1) return;
+
+      const addBtn = (label, p, disabled = false, active = false) => {
+        ul.insertAdjacentHTML(
+          "beforeend",
+          `<li class="page-item ${disabled ? "disabled" : ""} ${active ? "active" : ""}">
+            <a class="page-link" href="#" data-page="${p}">${label}</a>
+          </li>`,
+        );
+      };
+
+      addBtn("«", 1, page === 1);
+      addBtn("‹", page - 1, page === 1);
+
+      let start = Math.max(1, page - 2),
+        end = Math.min(totalPages, page + 2);
+      for (let i = start; i <= end; i++) addBtn(i, i, false, i === page);
+
+      addBtn("›", page + 1, page === totalPages);
+      addBtn("»", totalPages, page === totalPages);
+
+      ul.querySelectorAll("[data-page]").forEach((a) => {
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          const p = +a.dataset.page;
+          if (p < 1 || p > totalPages || p === page) return;
+          page = p;
+          loadTable();
+        });
+      });
+    }
+
+    function renderInfo() {
+      const from = totalRows ? (page - 1) * perPage + 1 : 0;
+      const to = Math.min(page * perPage, totalRows);
+      document.getElementById("info-pagination").textContent =
+        `Menampilkan ${from}–${to} dari ${totalRows} pengaduan`;
+    }
+
+    /* ── tab status cepat ── */
+    document.querySelectorAll(".tab-link").forEach((a) => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        document
+          .querySelectorAll(".tab-link")
+          .forEach((x) => x.classList.remove("active"));
+        a.classList.add("active");
+        document.getElementById("f-status").value = a.dataset.status;
+        page = 1;
+        loadTable();
+      });
+    });
+
+    /* ── aksi inline (proses & selesai) ── */
+    document
+      .getElementById("tbody-pengaduan")
+      .addEventListener("click", function (e) {
+        const btnP = e.target.closest(".btn-proses");
+        const btnS = e.target.closest(".btn-selesai");
+
+        if (btnP) {
+          if (!confirm("Tandai pengaduan ini sebagai Diproses?")) return;
+          ubahStatus(btnP.dataset.id, "PROSES");
+        }
+        if (btnS) {
+          if (!confirm("Tandai pengaduan ini sebagai Selesai?")) return;
+          ubahStatus(btnS.dataset.id, "SELESAI");
+        }
+      });
+
+    function ubahStatus(id, kode) {
+      fetch(`/api/pengaduan/${id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kode, catatan: "" }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (window.toastr) toastr.success(d.message || "Status diperbarui");
+          loadTable();
+          loadBadges();
+        })
+        .catch(() => {
+          if (window.toastr) toastr.error("Gagal memperbarui status");
+        });
+    }
+
+    /* ── event filter ── */
+    document.getElementById("btn-filter").addEventListener("click", () => {
+      page = 1;
+      loadTable();
+    });
+    document.getElementById("btn-reset").addEventListener("click", () => {
+      ["f-status", "f-kategori", "f-prioritas", "f-cari"].forEach((id) => {
+        document.getElementById(id).value = "";
+      });
+      document
+        .querySelectorAll(".tab-link")
+        .forEach((x) => x.classList.remove("active"));
+      document
+        .querySelector(".tab-link[data-status='']")
+        .classList.add("active");
+      page = 1;
+      loadTable();
+      loadBadges();
+    });
+
+    /* ── init ── */
+    loadBadges();
+    loadTable();
+  });
+</script>
+{% endblock %}

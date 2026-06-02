@@ -1,0 +1,846 @@
+{% extends 'layout/templates.html' %} {% block content %}
+
+<!-- ===== FILTER PANEL ===== -->
+<div class="card card-outline card-primary">
+  <div class="card-header">
+    <h3 class="card-title">
+      <i class="fas fa-filter mr-1"></i> Filter Laporan
+    </h3>
+    <div class="card-tools">
+      <button type="button" class="btn btn-tool" data-card-widget="collapse">
+        <i class="fas fa-minus"></i>
+      </button>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="row align-items-end">
+      <div class="col-md-3 col-sm-6">
+        <div class="form-group mb-0">
+          <label class="font-weight-bold">Tanggal Mulai</label>
+          <input type="date" id="filter-dari" class="form-control" />
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="form-group mb-0">
+          <label class="font-weight-bold">Tanggal Akhir</label>
+          <input type="date" id="filter-sampai" class="form-control" />
+        </div>
+      </div>
+
+      <div class="col-md-2 col-sm-6">
+        <div class="form-group mb-0">
+          <label class="font-weight-bold">Kategori</label>
+          <select id="filter-kategori" class="form-control">
+            <option value="">Semua</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="col-md-2 col-sm-6">
+        <div class="form-group mb-0">
+          <label class="font-weight-bold">Status</label>
+          <select id="filter-status" class="form-control">
+            <option value="">Semua</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="col-md-2 col-sm-12 mt-2 mt-md-0">
+        <div class="d-flex gap-2">
+          <button id="btn-terapkan" class="btn btn-primary btn-block mr-1">
+            <i class="fas fa-search"></i> Terapkan
+          </button>
+          <button id="btn-reset" class="btn btn-default btn-block">
+            <i class="fas fa-undo"></i> Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shortcut range -->
+    <div class="mt-2">
+      <span class="text-muted mr-2 small">Cepat:</span>
+      <button
+        class="btn btn-xs btn-outline-secondary mr-1 btn-range"
+        data-range="7"
+      >
+        7 Hari
+      </button>
+      <button
+        class="btn btn-xs btn-outline-secondary mr-1 btn-range"
+        data-range="30"
+      >
+        30 Hari
+      </button>
+      <button
+        class="btn btn-xs btn-outline-secondary mr-1 btn-range"
+        data-range="90"
+      >
+        3 Bulan
+      </button>
+      <button
+        class="btn btn-xs btn-outline-secondary btn-range"
+        data-range="365"
+      >
+        1 Tahun
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SUMMARY CARDS ===== -->
+<div class="row" id="summary-cards">
+  <div class="col-xl col-md-4 col-6">
+    <div class="info-box mb-3 shadow-sm">
+      <span class="info-box-icon bg-info"><i class="fas fa-inbox"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Total Pengaduan</span>
+        <span class="info-box-number" id="s-total">—</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl col-md-4 col-6">
+    <div class="info-box mb-3 shadow-sm">
+      <span class="info-box-icon bg-success"
+        ><i class="fas fa-check-circle"></i
+      ></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Selesai</span>
+        <span class="info-box-number" id="s-selesai">—</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl col-md-4 col-6">
+    <div class="info-box mb-3 shadow-sm">
+      <span class="info-box-icon bg-warning"
+        ><i class="fas fa-spinner"></i
+      ></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Diproses</span>
+        <span class="info-box-number" id="s-proses">—</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl col-md-4 col-6">
+    <div class="info-box mb-3 shadow-sm">
+      <span class="info-box-icon bg-danger"
+        ><i class="fas fa-times-circle"></i
+      ></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Ditolak</span>
+        <span class="info-box-number" id="s-ditolak">—</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl col-md-4 col-6">
+    <div class="info-box mb-3 shadow-sm">
+      <span class="info-box-icon bg-primary"
+        ><i class="fas fa-percentage"></i
+      ></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Tingkat Selesai</span>
+        <span class="info-box-number" id="s-pct">—</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl col-md-4 col-6">
+    <div class="info-box mb-3 shadow-sm">
+      <span class="info-box-icon bg-secondary"
+        ><i class="fas fa-clock"></i
+      ></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Rata-rata Penanganan</span>
+        <span class="info-box-number" id="s-avg">—</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ROW: Tren Waktu + Pie Status ===== -->
+<div class="row">
+  <!-- Line Chart: Tren pengaduan per hari/minggu -->
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-chart-line mr-1"></i> Tren Pengaduan
+        </h3>
+        <div class="card-tools d-flex align-items-center">
+          <div class="btn-group btn-group-sm mr-2" id="tren-group">
+            <button class="btn btn-default active" data-granularity="harian">
+              Harian
+            </button>
+            <button class="btn btn-default" data-granularity="mingguan">
+              Mingguan
+            </button>
+            <button class="btn btn-default" data-granularity="bulanan">
+              Bulanan
+            </button>
+          </div>
+          <button
+            type="button"
+            class="btn btn-tool"
+            data-card-widget="collapse"
+          >
+            <i class="fas fa-minus"></i>
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <canvas id="chartTren" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Doughnut: Status -->
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-chart-pie mr-1"></i> Distribusi Status
+        </h3>
+        <div class="card-tools">
+          <button
+            type="button"
+            class="btn btn-tool"
+            data-card-widget="collapse"
+          >
+            <i class="fas fa-minus"></i>
+          </button>
+        </div>
+      </div>
+      <div class="card-body text-center">
+        <canvas
+          id="chartStatusPie"
+          style="max-width: 200px; max-height: 200px; margin: 0 auto"
+        ></canvas>
+        <ul class="list-unstyled mt-3 text-left" id="pie-legend"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ROW: Bar Kategori + Bar Prioritas ===== -->
+<div class="row">
+  <!-- Horizontal Bar: Kategori -->
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-tags mr-1"></i> Pengaduan per Kategori
+        </h3>
+        <div class="card-tools">
+          <button
+            type="button"
+            class="btn btn-tool"
+            data-card-widget="collapse"
+          >
+            <i class="fas fa-minus"></i>
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <canvas id="chartKategori" height="130"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bar: Prioritas + Petugas workload -->
+  <div class="col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-exclamation-triangle mr-1"></i> Distribusi Prioritas
+        </h3>
+        <div class="card-tools">
+          <button
+            type="button"
+            class="btn btn-tool"
+            data-card-widget="collapse"
+          >
+            <i class="fas fa-minus"></i>
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <canvas id="chartPrioritas" height="130"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Kinerja Petugas ===== -->
+<div class="row">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-user-check mr-1"></i> Kinerja Petugas
+        </h3>
+        <div class="card-tools">
+          <button
+            type="button"
+            class="btn btn-tool"
+            data-card-widget="collapse"
+          >
+            <i class="fas fa-minus"></i>
+          </button>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th>Petugas</th>
+                <th>Unit Kerja</th>
+                <th class="text-center">Ditugaskan</th>
+                <th class="text-center">Selesai</th>
+                <th class="text-center">Diproses</th>
+                <th class="text-center">Tingkat Selesai</th>
+                <th class="text-center">Rata-rata (jam)</th>
+              </tr>
+            </thead>
+            <tbody id="tabel-petugas">
+              <tr>
+                <td colspan="7" class="text-center py-3">
+                  <i class="fas fa-spinner fa-spin"></i>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Tabel Detail + Export ===== -->
+<div class="card shadow-sm">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-table mr-1"></i> Data Pengaduan</h3>
+    <div class="card-tools">
+      <button id="btn-export-csv" class="btn btn-sm btn-success mr-1">
+        <i class="fas fa-file-csv"></i> Export CSV
+      </button>
+      <button id="btn-print" class="btn btn-sm btn-secondary">
+        <i class="fas fa-print"></i> Cetak
+      </button>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table
+        id="tabel-laporan"
+        class="table table-bordered table-striped table-sm mb-0"
+      >
+        <thead class="thead-light">
+          <tr>
+            <th>No</th>
+            <th>Judul</th>
+            <th>Pelapor</th>
+            <th>Kategori</th>
+            <th>Lokasi</th>
+            <th>Prioritas</th>
+            <th>Status</th>
+            <th>Petugas</th>
+            <th>Tgl Masuk</th>
+            <th>Tgl Selesai</th>
+            <th>Durasi (jam)</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-laporan">
+          <tr>
+            <td colspan="11" class="text-center py-3">
+              <i class="fas fa-spinner fa-spin"></i> Memuat...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %} {% block js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    /* ───────────────────────── helpers ───────────────────────── */
+    function fmtTgl(str) {
+      if (!str) return "—";
+      return new Date(str).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    }
+    function toIso(date) {
+      return date.toISOString().split("T")[0];
+    }
+    function today() {
+      return toIso(new Date());
+    }
+    function daysAgo(n) {
+      const d = new Date();
+      d.setDate(d.getDate() - n);
+      return toIso(d);
+    }
+
+    const PRIO_MAP = {
+      1: { label: "Rendah", cls: "badge-secondary" },
+      2: { label: "Sedang", cls: "badge-warning" },
+      3: { label: "Tinggi", cls: "badge-danger" },
+    };
+
+    /* ───────────────────────── state ───────────────────────── */
+    let granularity = "harian";
+    let chartTren, chartStatusPie, chartKategori, chartPrioritas;
+
+    /* default range: 30 hari terakhir */
+    document.getElementById("filter-dari").value = daysAgo(30);
+    document.getElementById("filter-sampai").value = today();
+
+    /* ───────────────────────── populate filter dropdowns ───────────────────────── */
+    fetch("/api/laporan/filter-options")
+      .then((r) => r.json())
+      .then(({ kategori, status }) => {
+        const selK = document.getElementById("filter-kategori");
+        kategori.forEach((k) => {
+          const o = document.createElement("option");
+          o.value = k.id;
+          o.textContent = k.nama;
+          selK.appendChild(o);
+        });
+        const selS = document.getElementById("filter-status");
+        status.forEach((s) => {
+          const o = document.createElement("option");
+          o.value = s.kode;
+          o.textContent = s.nama;
+          selS.appendChild(o);
+        });
+      });
+
+    /* ───────────────────────── build query params ───────────────────────── */
+    function getParams(extra = {}) {
+      const p = new URLSearchParams({
+        dari: document.getElementById("filter-dari").value,
+        sampai: document.getElementById("filter-sampai").value,
+        kategori: document.getElementById("filter-kategori").value,
+        status: document.getElementById("filter-status").value,
+        ...extra,
+      });
+      return p.toString();
+    }
+
+    /* ───────────────────────── load all ───────────────────────── */
+    function loadAll() {
+      loadRingkasan();
+      loadTren();
+      loadKategori();
+      loadStatus();
+      loadPrioritas();
+      loadPetugas();
+      loadDetail();
+    }
+
+    /* ── 1. Summary cards ── */
+    function loadRingkasan() {
+      fetch(`/api/laporan/ringkasan?${getParams()}`)
+        .then((r) => r.json())
+        .then((d) => {
+          document.getElementById("s-total").textContent = d.total ?? 0;
+          document.getElementById("s-selesai").textContent = d.selesai ?? 0;
+          document.getElementById("s-proses").textContent = d.proses ?? 0;
+          document.getElementById("s-ditolak").textContent = d.ditolak ?? 0;
+          const pct = d.total ? Math.round((d.selesai / d.total) * 100) : 0;
+          document.getElementById("s-pct").textContent = pct + "%";
+          document.getElementById("s-avg").textContent =
+            d.avg_jam != null ? d.avg_jam + " jam" : "—";
+        });
+    }
+
+    /* ── 2. Tren ── */
+    function loadTren() {
+      fetch(`/api/laporan/tren?${getParams({ granularity })}`)
+        .then((r) => r.json())
+        .then((rows) => {
+          const labels = rows.map((r) => r.periode);
+          const masuk = rows.map((r) => r.masuk);
+          const selesai = rows.map((r) => r.selesai);
+
+          if (chartTren) chartTren.destroy();
+          chartTren = new Chart(
+            document.getElementById("chartTren").getContext("2d"),
+            {
+              type: "line",
+              data: {
+                labels,
+                datasets: [
+                  {
+                    label: "Masuk",
+                    data: masuk,
+                    borderColor: "#3B82F6",
+                    backgroundColor: "rgba(59,130,246,0.1)",
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: 3,
+                  },
+                  {
+                    label: "Selesai",
+                    data: selesai,
+                    borderColor: "#10B981",
+                    backgroundColor: "rgba(16,185,129,0.1)",
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: 3,
+                  },
+                ],
+              },
+              options: {
+                responsive: true,
+                plugins: { legend: { position: "top" } },
+                scales: {
+                  y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                },
+              },
+            },
+          );
+        });
+    }
+
+    /* ── 3. Kategori ── */
+    function loadKategori() {
+      fetch(`/api/laporan/kategori?${getParams()}`)
+        .then((r) => r.json())
+        .then((rows) => {
+          const labels = rows.map((r) => r.kategori);
+          const selesai = rows.map((r) => r.selesai);
+          const diproses = rows.map((r) => r.diproses);
+          const menunggu = rows.map((r) => r.menunggu);
+
+          if (chartKategori) chartKategori.destroy();
+          chartKategori = new Chart(
+            document.getElementById("chartKategori").getContext("2d"),
+            {
+              type: "bar",
+              data: {
+                labels,
+                datasets: [
+                  {
+                    label: "Menunggu",
+                    data: menunggu,
+                    backgroundColor: "#3B82F6",
+                  },
+                  {
+                    label: "Diproses",
+                    data: diproses,
+                    backgroundColor: "#F59E0B",
+                  },
+                  {
+                    label: "Selesai",
+                    data: selesai,
+                    backgroundColor: "#10B981",
+                  },
+                ],
+              },
+              options: {
+                indexAxis: "y",
+                responsive: true,
+                plugins: { legend: { position: "top" } },
+                scales: {
+                  x: {
+                    stacked: true,
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 },
+                  },
+                  y: { stacked: true },
+                },
+              },
+            },
+          );
+        });
+    }
+
+    /* ── 4. Status pie ── */
+    function loadStatus() {
+      fetch(`/api/laporan/status?${getParams()}`)
+        .then((r) => r.json())
+        .then((rows) => {
+          const labels = rows.map((r) => r.nama);
+          const counts = rows.map((r) => r.jumlah);
+          const colors = rows.map((r) => r.warna);
+
+          if (chartStatusPie) chartStatusPie.destroy();
+          chartStatusPie = new Chart(
+            document.getElementById("chartStatusPie").getContext("2d"),
+            {
+              type: "doughnut",
+              data: {
+                labels,
+                datasets: [
+                  { data: counts, backgroundColor: colors, borderWidth: 2 },
+                ],
+              },
+              options: {
+                cutout: "62%",
+                plugins: { legend: { display: false } },
+              },
+            },
+          );
+
+          const legend = document.getElementById("pie-legend");
+          legend.innerHTML = "";
+          rows.forEach((r) => {
+            const li = document.createElement("li");
+            li.className = "d-flex justify-content-between mb-1";
+            li.innerHTML = `
+            <span><i class="fas fa-circle mr-1" style="color:${r.warna}"></i>${r.nama}</span>
+            <strong>${r.jumlah}</strong>`;
+            legend.appendChild(li);
+          });
+        });
+    }
+
+    /* ── 5. Prioritas ── */
+    function loadPrioritas() {
+      fetch(`/api/laporan/prioritas?${getParams()}`)
+        .then((r) => r.json())
+        .then((rows) => {
+          const labels = rows.map((r) => r.label);
+          const counts = rows.map((r) => r.jumlah);
+          const colors = ["#6B7280", "#F59E0B", "#EF4444"];
+
+          if (chartPrioritas) chartPrioritas.destroy();
+          chartPrioritas = new Chart(
+            document.getElementById("chartPrioritas").getContext("2d"),
+            {
+              type: "bar",
+              data: {
+                labels,
+                datasets: [
+                  { label: "Jumlah", data: counts, backgroundColor: colors },
+                ],
+              },
+              options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+              },
+            },
+          );
+        });
+    }
+
+    /* ── 6. Kinerja Petugas ── */
+    function loadPetugas() {
+      const tbody = document.getElementById("tabel-petugas");
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center"><i class="fas fa-spinner fa-spin"></i></td></tr>`;
+
+      fetch(`/api/laporan/petugas?${getParams()}`)
+        .then((r) => r.json())
+        .then((rows) => {
+          tbody.innerHTML = "";
+          if (!rows.length) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Tidak ada data.</td></tr>`;
+            return;
+          }
+          rows.forEach((p) => {
+            const pct = p.ditugaskan
+              ? Math.round((p.selesai / p.ditugaskan) * 100)
+              : 0;
+            const barColor =
+              pct >= 75 ? "success" : pct >= 40 ? "warning" : "danger";
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+            <td>${p.nama}</td>
+            <td><small class="text-muted">${p.unit_kerja || "—"}</small></td>
+            <td class="text-center">${p.ditugaskan}</td>
+            <td class="text-center"><span class="text-success font-weight-bold">${p.selesai}</span></td>
+            <td class="text-center">${p.diproses}</td>
+            <td class="text-center">
+              <div class="d-flex align-items-center justify-content-center">
+                <div class="progress flex-grow-1 mr-2" style="height:8px; max-width:80px;">
+                  <div class="progress-bar bg-${barColor}" style="width:${pct}%"></div>
+                </div>
+                <span>${pct}%</span>
+              </div>
+            </td>
+            <td class="text-center">${p.avg_jam != null ? p.avg_jam : "—"}</td>
+          `;
+            tbody.appendChild(tr);
+          });
+        });
+    }
+
+    /* ── 7. Tabel Detail ── */
+    let detailData = [];
+
+    function loadDetail() {
+      const tbody = document.getElementById("tbody-laporan");
+      tbody.innerHTML = `<tr><td colspan="11" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>`;
+
+      fetch(`/api/laporan/detail?${getParams()}`)
+        .then((r) => r.json())
+        .then((rows) => {
+          detailData = rows;
+          tbody.innerHTML = "";
+          if (!rows.length) {
+            tbody.innerHTML = `<tr><td colspan="11" class="text-center text-muted">Tidak ada data.</td></tr>`;
+            return;
+          }
+          rows.forEach((r, i) => {
+            const p = PRIO_MAP[r.prioritas] || {
+              label: "—",
+              cls: "badge-secondary",
+            };
+            const durasi = r.durasi_jam != null ? r.durasi_jam + " jam" : "—";
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+            <td>${i + 1}</td>
+            <td class="text-truncate" style="max-width:150px;" title="${r.judul}">${r.judul}</td>
+            <td>${r.pelapor}</td>
+            <td><span class="badge badge-secondary">${r.kategori}</span></td>
+            <td class="text-truncate" style="max-width:120px;">${r.lokasi || "—"}</td>
+            <td><span class="badge ${p.cls}">${p.label}</span></td>
+            <td><span class="badge" style="background:${r.warna_status};color:#fff;">${r.status}</span></td>
+            <td>${r.petugas || "—"}</td>
+            <td>${fmtTgl(r.dibuat_pada)}</td>
+            <td>${fmtTgl(r.diselesaikan_pada)}</td>
+            <td class="text-center">${durasi}</td>
+          `;
+            tbody.appendChild(tr);
+          });
+
+          /* reinit DataTable jika tersedia */
+          if (window.jQuery && $.fn && $.fn.DataTable) {
+            if ($.fn.DataTable.isDataTable("#tabel-laporan")) {
+              $("#tabel-laporan").DataTable().clear().destroy();
+            }
+            $("#tabel-laporan").DataTable({
+              responsive: true,
+              autoWidth: false,
+              order: [[8, "desc"]],
+              language: {
+                url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json",
+              },
+            });
+          }
+        });
+    }
+
+    /* ───────────────────────── export CSV ───────────────────────── */
+    document
+      .getElementById("btn-export-csv")
+      .addEventListener("click", function () {
+        if (!detailData.length) {
+          alert("Tidak ada data untuk diekspor.");
+          return;
+        }
+
+        const headers = [
+          "No",
+          "Judul",
+          "Pelapor",
+          "Kategori",
+          "Lokasi",
+          "Prioritas",
+          "Status",
+          "Petugas",
+          "Tgl Masuk",
+          "Tgl Selesai",
+          "Durasi (jam)",
+        ];
+        const rows = detailData.map((r, i) => {
+          const p = PRIO_MAP[r.prioritas]?.label || "—";
+          return [
+            i + 1,
+            `"${r.judul}"`,
+            r.pelapor,
+            r.kategori,
+            `"${r.lokasi || ""}"`,
+            p,
+            r.status,
+            r.petugas || "",
+            fmtTgl(r.dibuat_pada),
+            fmtTgl(r.diselesaikan_pada),
+            r.durasi_jam != null ? r.durasi_jam : "",
+          ].join(",");
+        });
+
+        const csv = [headers.join(","), ...rows].join("\n");
+        const blob = new Blob(["\uFEFF" + csv], {
+          type: "text/csv;charset=utf-8;",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `laporan_pengaduan_${document.getElementById("filter-dari").value}_${document.getElementById("filter-sampai").value}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+    /* ───────────────────────── print ───────────────────────── */
+    document
+      .getElementById("btn-print")
+      .addEventListener("click", () => window.print());
+
+    /* ───────────────────────── filter events ───────────────────────── */
+    document.getElementById("btn-terapkan").addEventListener("click", loadAll);
+    document.getElementById("btn-reset").addEventListener("click", function () {
+      document.getElementById("filter-dari").value = daysAgo(30);
+      document.getElementById("filter-sampai").value = today();
+      document.getElementById("filter-kategori").value = "";
+      document.getElementById("filter-status").value = "";
+      loadAll();
+    });
+
+    document.querySelectorAll(".btn-range").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        document.getElementById("filter-dari").value = daysAgo(
+          +this.dataset.range,
+        );
+        document.getElementById("filter-sampai").value = today();
+        loadAll();
+      });
+    });
+
+    /* granularity toggle */
+    document.querySelectorAll("#tren-group button").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        document
+          .querySelectorAll("#tren-group button")
+          .forEach((b) => b.classList.remove("active"));
+        this.classList.add("active");
+        granularity = this.dataset.granularity;
+        loadTren();
+      });
+    });
+
+    /* ───────────────────────── init ───────────────────────── */
+    loadAll();
+  });
+</script>
+
+<style>
+  @media print {
+    .main-sidebar,
+    .main-header,
+    .content-header,
+    .card-tools,
+    #btn-export-csv,
+    #btn-print,
+    .card:has(#chartTren),
+    .card:has(#chartStatusPie),
+    .card:has(#chartKategori),
+    .card:has(#chartPrioritas) {
+      display: none !important;
+    }
+    .card {
+      break-inside: avoid;
+    }
+  }
+</style>
+
+{% endblock %}

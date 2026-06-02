@@ -1,0 +1,234 @@
+/* Semua elemen: hapus background & warna */
+* {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  outline-color: #000000 !important;
+}
+
+/* Paksa body & html putih sebagai kanvas */
+html,
+body {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* =============================================
+          BORDER — tampilkan outline pada semua elemen
+          ============================================= */
+
+div,
+section,
+aside,
+nav,
+header,
+footer,
+main,
+article,
+form,
+table,
+thead,
+tbody,
+tfoot,
+tr,
+th,
+td,
+ul,
+ol,
+li,
+input,
+select,
+textarea,
+button,
+a,
+span,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+label,
+figure,
+figcaption,
+img,
+svg,
+canvas,
+video {
+  border-color: #000000 !important;
+}
+
+/* Elemen struktural dapat border tipis */
+div,
+section,
+aside,
+nav,
+header,
+footer,
+main,
+article {
+  outline: 1px solid #000000 !important;
+}
+
+/* =============================================
+          GAMBAR & MEDIA — hanya kotak outline
+          ============================================= */
+
+img,
+video,
+canvas,
+svg,
+iframe {
+  border: 1px solid #000000 !important;
+  filter: opacity(0) !important; /* sembunyikan konten gambar */
+  min-width: 24px !important;
+  min-height: 24px !important;
+}
+
+/* =============================================
+          INPUT & FORM
+          ============================================= */
+
+input,
+select,
+textarea {
+  border: 1px solid #000000 !important;
+  background: transparent !important;
+  color: #000000 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  border: 1px solid #000000 !important;
+  accent-color: transparent !important;
+}
+
+/* =============================================
+          TOMBOL
+          ============================================= */
+
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+[role="button"] {
+  border: 1px solid #000000 !important;
+  background: transparent !important;
+  color: #000000 !important;
+  cursor: pointer !important;
+}
+
+/* =============================================
+          TABEL
+          ============================================= */
+
+table {
+  border: 1px solid #000000 !important;
+  border-collapse: collapse !important;
+}
+
+th,
+td {
+  border: 1px solid #000000 !important;
+}
+
+/* =============================================
+          TIPOGRAFI — hitam semua
+          ============================================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+a,
+label,
+li,
+td,
+th,
+button,
+input,
+select,
+textarea,
+blockquote,
+caption {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  text-decoration: none !important;
+}
+
+/* =============================================
+          PSEUDO-ELEMENT & DEKORATIF
+          ============================================= */
+
+*::before,
+*::after {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-color: #000000 !important;
+  box-shadow: none !important;
+  color: #000000 !important;
+}
+
+/* =============================================
+          OVERRIDE INLINE STYLE & CSS VARIABLES
+          ============================================= */
+
+[style*="background"],
+[style*="color"],
+[style*="border"] {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* CSS custom properties — override ke transparan */
+:root {
+  --primary-color: transparent !important;
+  --secondary-color: transparent !important;
+  --background-color: #ffffff !important;
+  --text-color: #000000 !important;
+  --border-color: #000000 !important;
+  --card-bg: transparent !important;
+  --sidebar-bg: transparent !important;
+  --navbar-bg: transparent !important;
+  --btn-bg: transparent !important;
+  --input-bg: transparent !important;
+  --color-background-primary: transparent !important;
+  --color-background-secondary: transparent !important;
+  --color-background-tertiary: transparent !important;
+  --color-text-primary: #000000 !important;
+  --color-text-secondary: #000000 !important;
+}
+
+/* =============================================
+          SCROLLBAR — bersihkan warna
+          ============================================= */
+
+::-webkit-scrollbar {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cccccc !important;
+  border: 1px solid #000000 !important;
+}
+
+/* =============================================
+          SELECTION
+          ============================================= */
+
+::selection {
+  background: rgba(0, 0, 0, 0.15) !important;
+  color: #000000 !important;
+}

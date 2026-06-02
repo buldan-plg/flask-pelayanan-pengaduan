@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>STMIK CM | {{title}}</title>
+  <link rel="icon" href="{{url_for('static', filename='dist/img/logostmik.jpg')}}" type="image/jpeg">
+
+  <!-- Google Font -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@700;800&display=swap">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="{{url_for('static', filename='plugins/fontawesome-free/css/all.min.css')}}">
+  <!-- CodeMirror -->
+  <link rel="stylesheet" href="{{url_for('static', filename='plugins/codemirror/codemirror.css')}}">
+  <link rel="stylesheet" href="{{url_for('static', filename='plugins/codemirror/theme/monokai.css')}}">
+  <!-- AdminLTE -->
+  <link rel="stylesheet" href="{{url_for('static', filename='dist/css/adminlte.min.css')}}">
+  
+  <style>
+    /* ── Quiz CSS Variables (selaras dark-mode AdminLTE) ── */
+    :root {
+      --qz-bg:       #0a0a0f;
+      --qz-surface:  #111118;
+      --qz-surface2: #1a1a24;
+      --qz-border:   #2a2a3a;
+      --qz-accent:   #00ff88;
+      --qz-warn:     #ff6b35;
+      --qz-text:     #e2e2f0;
+      --qz-muted:    #6b6b8a;
+      --qz-easy:     #00ff88;
+      --qz-medium:   #ffbe0b;
+      --qz-hard:     #ff6b35;
+    }
+
+    /* ── Override AdminLTE content area untuk halaman quiz ── */
+    .quiz-page .content-wrapper {
+      background: var(--qz-bg) !important;
+      /* Hilangkan padding default AdminLTE di halaman quiz */
+      padding: 0 !important;
+      min-height: calc(100vh - 57px - 57px); /* kurangi navbar + footer */
+    }
+
+    .quiz-page .content-header { display: none; } /* sembunyikan breadcrumb */
+    .quiz-page .content        { padding: 0 !important; }
+    .quiz-page .container      { max-width: 100% !important; padding: 0 !important; }
+    .quiz-page .row            { margin: 0 !important; }
+
+    /* ── Grid background ── */
+    .quiz-page .content-wrapper::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Quiz toolbar (filter + progress, di bawah navbar AdminLTE) ── */
+    .quiz-toolbar {
+      position: sticky;
+      top: 57px; /* tinggi navbar AdminLTE */
+      z-index: 99;
+      background: rgba(17,17,24,0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--qz-border);
+      padding: 0.6rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+    .quiz-toolbar select {
+      background: var(--qz-surface2);
+      border: 1px solid var(--qz-border);
+      color: var(--qz-text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      cursor: pointer;
+      outline: none;
+    }
+    .quiz-toolbar select:focus { border-color: var(--qz-accent); }
+    .quiz-toolbar-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .quiz-progress-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--qz-muted);
+    }
+    .quiz-progress-bar-wrap {
+      width: 120px;
+      height: 4px;
+      background: var(--qz-border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .quiz-progress-bar {
+      height: 100%;
+      background: var(--qz-accent);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    /* ── Layout utama quiz ── */
+    .quiz-layout {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      height: calc(100vh - 57px - 57px - 49px); /* navbar + footer + toolbar */
+      overflow: hidden;
+    }
+
+    /* ── Sidebar soal ── */
+    .quiz-sidebar {
+      border-right: 1px solid var(--qz-border);
+      background: var(--qz-surface);
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .quiz-sidebar-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 2px;
+      color: var(--qz-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--qz-border);
+    }
+
+    /* Question Cards */
+    .q-card {
+      padding: 0.7rem 0.9rem;
+      border: 1px solid var(--qz-border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--qz-surface2);
+      position: relative;
+      overflow: hidden;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .q-card:hover           { border-color: var(--qz-accent); transform: translateX(3px); }
+    .q-card.active          { border-color: var(--qz-accent); background: rgba(0,255,136,0.06); }
+    .q-card.solved::after   { content: '✓'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--qz-accent); }
+    .q-card-title           { font-size: 0.78rem; font-weight: 600; color: var(--qz-text); margin-bottom: 0.3rem; padding-right: 1.2rem; }
+    .q-card-meta            { display: flex; gap: 0.4rem; }
+
+    /* Badges */
+    .qz-badge               { font-size: 0.58rem; padding: 0.1rem 0.45rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .qz-badge-easy          { background: rgba(0,255,136,0.15); color: var(--qz-easy); }
+    .qz-badge-medium        { background: rgba(255,190,11,0.15); color: var(--qz-medium); }
+    .qz-badge-hard          { background: rgba(255,107,53,0.15); color: var(--qz-hard); }
+    .qz-badge-cat           { background: rgba(124,58,237,0.2); color: #a78bfa; }
+
+    /* ── Main panel ── */
+    .quiz-main {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
+      background: var(--qz-bg);
+    }
+
+    /* Question header */
+    .q-header {
+      padding: 1.2rem 1.8rem 0.8rem;
+      border-bottom: 1px solid var(--qz-border);
+      background: var(--qz-surface);
+    }
+    .q-number       { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--qz-muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.3rem; }
+    .q-title-main   { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; color: var(--qz-text); margin-bottom: 0.5rem; }
+    .q-description  { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #aaa; line-height: 1.7; max-width: 680px; }
+    .q-description code { background: var(--qz-surface2); border: 1px solid var(--qz-border); padding: 0.1em 0.4em; border-radius: 4px; color: var(--qz-accent); font-size: 0.9em; }
+    .q-badges       { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+
+    /* Editor + Output split */
+    .quiz-editor-area {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      overflow: hidden;
+    }
+
+    /* Code pane */
+    .quiz-editor-pane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--qz-border);
+    }
+    .editor-toolbar {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      background: var(--qz-surface);
+      border-bottom: 1px solid var(--qz-border);
+      gap: 0.5rem;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+
+    .lang-tabs { display: flex; gap: 0.3rem; margin-left: 0.6rem; }
+    .lang-tab {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      padding: 0.2rem 0.65rem;
+      border: 1px solid var(--qz-border);
+      border-radius: 5px;
+      background: transparent;
+      color: var(--qz-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .lang-tab:hover        { color: var(--qz-text); border-color: #444; }
+    .lang-tab.active       { background: var(--qz-accent); border-color: var(--qz-accent); color: #000; font-weight: 700; }
+
+    #code-editor {
+      flex: 1;
+      background: #0d0d14;
+      color: #e2e2f0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.7;
+      border: none;
+      outline: none;
+      resize: none;
+      padding: 1rem 1.3rem;
+      tab-size: 4;
+    }
+
+    /* Right panel */
+    .quiz-right-panel {
+      display: flex;
+      flex-direction: column;
+      background: var(--qz-surface);
+      overflow-y: auto;
+    }
+    .panel-section  { padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--qz-border); }
+    .panel-label    { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; color: var(--qz-muted); margin-bottom: 0.6rem; }
+    #output         { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 1.6; white-space: pre-wrap; color: var(--qz-text); min-height: 50px; }
+    #output.has-error { color: var(--qz-warn); }
+
+    /* Validation box */
+    .validation-box { border-radius: 8px; padding: 0.75rem 0.9rem; font-size: 0.78rem; line-height: 1.6; display: none; font-family: 'JetBrains Mono', monospace; }
+    .validation-box.show    { display: block; }
+    .validation-box.correct { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.3); }
+    .validation-box.wrong   { background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.3); }
+    .validation-msg         { font-weight: 700; font-size: 0.88rem; margin-bottom: 0.4rem; }
+    .validation-box.correct .validation-msg { color: var(--qz-accent); }
+    .validation-box.wrong   .validation-msg { color: var(--qz-warn); }
+    .validation-detail      { font-size: 0.7rem; color: var(--qz-muted); }
+    .validation-detail strong { color: var(--qz-text); }
+
+    /* Hint box */
+    .hint-box { background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.25); border-radius: 8px; padding: 0.75rem 0.9rem; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #c4b5fd; line-height: 1.6; display: none; margin-bottom: 0.5rem; }
+    .hint-box.show  { display: block; }
+    .hint-counter   { font-size: 0.62rem; color: var(--qz-muted); margin-top: 0.3rem; }
+
+    /* Panel placeholder text */
+    .panel-placeholder { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--qz-muted); }
+
+    /* ── Bottom bar ── */
+    .quiz-bottom-bar {
+      padding: 0.7rem 1.5rem;
+      background: var(--qz-surface);
+      border-top: 1px solid var(--qz-border);
+      display: flex;
+      gap: 0.7rem;
+      align-items: center;
+    }
+    .qz-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.5rem 1.2rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .qz-btn-run   { background: var(--qz-accent); color: #000; }
+    .qz-btn-run:hover   { background: #00e07a; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,255,136,0.25); }
+    .qz-btn-run:active  { transform: translateY(0); }
+    .qz-btn-run.loading { opacity: 0.7; cursor: not-allowed; }
+    .qz-btn-hint  { background: transparent; border: 1px solid rgba(124,58,237,0.5); color: #a78bfa; }
+    .qz-btn-hint:hover  { background: rgba(124,58,237,0.1); border-color: #7c3aed; }
+    .qz-btn-reset { background: transparent; border: 1px solid var(--qz-border); color: var(--qz-muted); }
+    .qz-btn-reset:hover { border-color: var(--qz-warn); color: var(--qz-warn); }
+    .run-status   { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--qz-muted); }
+
+    /* ── Empty state ── */
+    .quiz-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--qz-muted); gap: 0.8rem; text-align: center; font-family: 'JetBrains Mono', monospace; }
+    .quiz-empty-state-icon { font-size: 2.5rem; opacity: 0.3; }
+    .quiz-empty-state p { font-size: 0.82rem; }
+
+    /* ── Responsive: collapse sidebar ke drawer di mobile ── */
+    @media (max-width: 768px) {
+      .quiz-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: visible;
+      }
+      .quiz-sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--qz-border);
+        max-height: 220px;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0.8rem;
+        gap: 0.5rem;
+      }
+      .quiz-sidebar-title { display: none; }
+      .q-card { min-width: 160px; flex-shrink: 0; transform: none !important; }
+      .quiz-main {
+        height: auto;
+        grid-template-rows: auto auto auto;
+      }
+      .quiz-editor-area {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      .quiz-right-panel {
+        max-height: none;
+        border-top: 1px solid var(--qz-border);
+      }
+      #code-editor { min-height: 240px; }
+      .quiz-toolbar-right { display: none; }
+    }
+
+    /* ── Scrollbar ── */
+    .quiz-sidebar::-webkit-scrollbar,
+    .quiz-right-panel::-webkit-scrollbar { width: 4px; height: 4px; }
+    .quiz-sidebar::-webkit-scrollbar-track,
+    .quiz-right-panel::-webkit-scrollbar-track { background: var(--qz-bg); }
+    .quiz-sidebar::-webkit-scrollbar-thumb,
+    .quiz-right-panel::-webkit-scrollbar-thumb { background: var(--qz-border); border-radius: 2px; }
+  </style>
+
+  {% block css %}{% endblock %}
+</head>
+
+<body class="hold-transition layout-top-nav dark-mode {% block body_class %}{% endblock %}">
+<div class="wrapper">
+
+  <!-- ── Navbar AdminLTE ── -->
+  <nav class="main-header navbar navbar-expand-md navbar-dark navbar-dark" style="background:#111118; border-bottom:1px solid #2a2a3a;">
+    <div class="container-fluid">
+      <a href="" class="navbar-brand">
+        <img src="{{url_for('static', filename='dist/img/logostmik.jpg')}}" alt="Logo"
+             class="brand-image img-circle elevation-3" style="opacity:.85">
+        <span class="brand-text font-weight-light" style="font-family:'Syne',sans-serif; letter-spacing:-0.5px;">
+          STMIK CM <span style="color:#00ff88;">Padangsidimpuan</span>
+        </span>
+      </a>
+
+      <button class="navbar-toggler order-1" type="button" data-toggle="collapse"
+              data-target="#navbarCollapse" aria-controls="navbarCollapse"
+              aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse order-3" id="navbarCollapse">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <a href="/mahasiswa/dashboard" class="nav-link
+            {% if request.path.startswith('/mahasiswa/dashboard') %} active {% endif %}">
+              <i class="fas fa-home mr-1"></i> Home
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/mahasiswa/quiz" class="nav-link {% block nav_quiz %}{% endblock %}">
+              <i class="fas fa-code mr-1"></i> Quiz
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/mahasiswa/challenge" class="nav-link {% block nav_challenge %}{% endblock %}">
+              <i class="fas fa-fire mr-1"></i> Challenge
+            </a>
+          </li>
+          <!-- <li class="nav-item">
+            <a href="/mahasiswa/rekomendasi/history" class="nav-link">
+              <i class="fas fa-history mr-1"></i> History
+            </a>
+          </li> -->
+          <li class="nav-item">
+            <a href="/logout" class="nav-link text-danger">
+              <i class="fas fa-sign-out-alt mr-1"></i> Logout
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <!-- /.navbar -->
+
+  <!-- ── Content Wrapper ── -->
+  <div class="content-wrapper {% block content_wrapper_class %}{% endblock %}">
+
+    <!-- Content Header (breadcrumb) — disembunyikan di quiz page via CSS -->
+    <div class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1 class="m-0">{{title}}</h1>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="#">Home</a></li>
+              <li class="breadcrumb-item active">{{title}}</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Main Content ── -->
+    <div class="content">
+      <div class="container-fluid px-0">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+
+  </div>
+  <!-- /.content-wrapper -->
+
+  <aside class="control-sidebar control-sidebar-dark"></aside>
+
+  <!-- ── Footer ── -->
+  <footer class="main-footer" style="background:#111118; border-top:1px solid #2a2a3a; color:#6b6b8a;">
+    <div class="float-right d-none d-sm-inline" style="font-family:'JetBrains Mono',monospace; font-size:0.75rem;">
+      v1.0.0
+    </div>
+    <strong style="font-family:'JetBrains Mono',monospace; font-size:0.75rem;">
+      &copy; 2024 <a href="#" style="color:#00ff88;">STMIK CM PADANGSIDIMPUAN</a>
+    </strong>
+    <span style="font-size:0.75rem;"> — All rights reserved.</span>
+  </footer>
+
+</div>
+<!-- ./wrapper -->
+
+<!-- jQuery -->
+<script src="{{url_for('static', filename='plugins/jquery/jquery.min.js')}}"></script>
+<!-- Bootstrap 4 -->
+<script src="{{url_for('static', filename='plugins/bootstrap/js/bootstrap.bundle.min.js')}}"></script>
+<script src="{{url_for('static', filename='plugins/codemirror/codemirror.js')}}"></script>
+<script src="{{url_for('static', filename='plugins/codemirror/mode/css/css.js')}}"></script>
+<script src="{{url_for('static', filename='plugins/codemirror/mode/xml/xml.js')}}"></script>
+<script src="{{url_for('static', filename='plugins/codemirror/mode/htmlmixed/htmlmixed.js')}}"></script>
+<!-- AdminLTE -->
+<script src="{{url_for('static', filename='dist/js/adminlte.min.js')}}"></script>
+
+{% block js %}{% endblock %}
+</body>
+</html>

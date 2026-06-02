@@ -1,0 +1,541 @@
+{% extends 'layout/templates.html' %} {% block content %}
+
+<!-- Selamat datang -->
+<div class="alert alert-light border-left border-warning border-3 mb-4 py-3">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-hard-hat fa-2x text-warning mr-3"></i>
+    <div>
+      <h5 class="mb-0 font-weight-bold">
+        Selamat datang, {{ session['user']['nama'] }}
+      </h5>
+      <small class="text-muted" id="info-unit">Memuat info unit kerja...</small>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SUMMARY CARDS ===== -->
+<div class="row">
+  <div class="col-lg-3 col-6">
+    <div class="small-box bg-info">
+      <div class="inner">
+        <h3 id="s-total">—</h3>
+        <p>Total Ditugaskan</p>
+      </div>
+      <div class="icon"><i class="fas fa-clipboard-list"></i></div>
+      <a href="/petugas/pengaduan" class="small-box-footer">
+        Lihat Semua <i class="fas fa-arrow-circle-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-6">
+    <div class="small-box bg-warning">
+      <div class="inner">
+        <h3 id="s-baru">—</h3>
+        <p>Belum Ditangani</p>
+      </div>
+      <div class="icon"><i class="fas fa-hourglass-half"></i></div>
+      <a href="/petugas/pengaduan/diproses" class="small-box-footer">
+        Lihat Detail <i class="fas fa-arrow-circle-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-6">
+    <div class="small-box bg-primary">
+      <div class="inner">
+        <h3 id="s-proses">—</h3>
+        <p>Sedang Diproses</p>
+      </div>
+      <div class="icon"><i class="fas fa-spinner"></i></div>
+      <a href="/petugas/pengaduan/diproses" class="small-box-footer">
+        Lihat Detail <i class="fas fa-arrow-circle-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-6">
+    <div class="small-box bg-success">
+      <div class="inner">
+        <h3 id="s-selesai">—</h3>
+        <p>Selesai Ditangani</p>
+      </div>
+      <div class="icon"><i class="fas fa-check-circle"></i></div>
+      <a href="/petugas/pengaduan/selesai" class="small-box-footer">
+        Lihat Detail <i class="fas fa-arrow-circle-right"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ROW 2: Progres kinerja + Chart prioritas ===== -->
+<div class="row">
+  <!-- Progres kinerja bulan ini -->
+  <div class="col-md-5">
+    <div class="card card-outline card-success">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-chart-line mr-1"></i> Kinerja Bulan Ini
+        </h3>
+      </div>
+      <div class="card-body">
+        <!-- Tingkat penyelesaian -->
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="font-weight-bold">Tingkat Penyelesaian</span>
+            <span id="pct-selesai" class="font-weight-bold text-success"
+              >—</span
+            >
+          </div>
+          <div class="progress" style="height: 12px">
+            <div
+              id="bar-selesai"
+              class="progress-bar bg-success"
+              style="width: 0%; transition: width 0.8s ease"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Rata-rata penanganan -->
+        <div class="info-box mb-2 shadow-none border">
+          <span class="info-box-icon bg-warning"
+            ><i class="fas fa-clock"></i
+          ></span>
+          <div class="info-box-content">
+            <span class="info-box-text">Rata-rata Penanganan</span>
+            <span class="info-box-number" id="avg-jam">—</span>
+          </div>
+        </div>
+
+        <!-- Prioritas tinggi pending -->
+        <div class="info-box mb-0 shadow-none border">
+          <span class="info-box-icon bg-danger"
+            ><i class="fas fa-exclamation-triangle"></i
+          ></span>
+          <div class="info-box-content">
+            <span class="info-box-text">Prioritas Tinggi Pending</span>
+            <span class="info-box-number" id="s-prioritas-tinggi">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Doughnut: sebaran status tugas saya -->
+  <div class="col-md-4">
+    <div class="card card-outline card-primary">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-chart-pie mr-1"></i> Sebaran Tugas
+        </h3>
+      </div>
+      <div class="card-body text-center">
+        <canvas
+          id="chartStatus"
+          style="max-width: 180px; max-height: 180px; margin: 0 auto"
+        ></canvas>
+        <ul class="list-unstyled mt-3 text-left" id="legend-status"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tren penyelesaian 7 hari terakhir -->
+  <div class="col-md-3">
+    <div class="card card-outline card-info">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-calendar-check mr-1"></i> 7 Hari Terakhir
+        </h3>
+      </div>
+      <div class="card-body p-2">
+        <canvas id="chartTren7" height="190"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ROW 3: Tugas prioritas tinggi ===== -->
+<div class="row">
+  <div class="col-md-6">
+    <div class="card card-outline card-danger">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-fire mr-1 text-danger"></i> Prioritas Tinggi
+        </h3>
+        <div class="card-tools">
+          <span class="badge badge-danger" id="badge-tinggi">0</span>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush" id="list-prioritas-tinggi">
+          <li class="list-group-item text-center text-muted">
+            <i class="fas fa-spinner fa-spin"></i>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tugas terbaru diassign -->
+  <div class="col-md-6">
+    <div class="card card-outline card-warning">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-bell mr-1 text-warning"></i> Baru Ditugaskan
+        </h3>
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush" id="list-baru-ditugaskan">
+          <li class="list-group-item text-center text-muted">
+            <i class="fas fa-spinner fa-spin"></i>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ROW 4: Daftar tugas aktif ===== -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">
+      <i class="fas fa-tasks mr-1"></i> Tugas Aktif Saya
+    </h3>
+    <div class="card-tools">
+      <a href="/petugas/pengaduan" class="btn btn-sm btn-primary">
+        <i class="fas fa-list"></i> Semua Tugas
+      </a>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0">
+        <thead class="thead-light">
+          <tr>
+            <th>#</th>
+            <th>Judul Pengaduan</th>
+            <th>Kategori</th>
+            <th>Lokasi</th>
+            <th>Prioritas</th>
+            <th>Status</th>
+            <th>Tgl Masuk</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-tugas-aktif">
+          <tr>
+            <td colspan="8" class="text-center py-3">
+              <i class="fas fa-spinner fa-spin"></i> Memuat...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %} {% block js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const PRIO = {
+      1: { label: "Rendah", cls: "badge-secondary", color: "#6B7280" },
+      2: { label: "Sedang", cls: "badge-warning", color: "#F59E0B" },
+      3: { label: "Tinggi", cls: "badge-danger", color: "#EF4444" },
+    };
+
+    function fmtTgl(str) {
+      if (!str) return "—";
+      return new Date(str).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    }
+
+    function selisihHari(str) {
+      if (!str) return null;
+      const diff = Date.now() - new Date(str).getTime();
+      return Math.floor(diff / 86400000);
+    }
+
+    /* ══════════════════════════════════════
+     1. RINGKASAN + KINERJA
+  ══════════════════════════════════════ */
+    fetch("/api/petugas/dashboard/ringkasan")
+      .then((r) => r.json())
+      .then((d) => {
+        // Info unit kerja
+        if (d.unit_kerja) {
+          document.getElementById("info-unit").textContent =
+            `${d.unit_kerja}${d.jabatan ? " — " + d.jabatan : ""}`;
+        }
+
+        // Summary cards
+        document.getElementById("s-total").textContent = d.total ?? 0;
+        document.getElementById("s-baru").textContent = d.belum ?? 0;
+        document.getElementById("s-proses").textContent = d.diproses ?? 0;
+        document.getElementById("s-selesai").textContent = d.selesai ?? 0;
+        document.getElementById("s-prioritas-tinggi").textContent =
+          d.prioritas_tinggi ?? 0;
+
+        // Progress bar tingkat selesai
+        const pct = d.total ? Math.round((d.selesai / d.total) * 100) : 0;
+        document.getElementById("pct-selesai").textContent = pct + "%";
+        document.getElementById("bar-selesai").style.width = pct + "%";
+
+        // Rata-rata jam
+        document.getElementById("avg-jam").textContent =
+          d.avg_jam != null ? d.avg_jam + " jam" : "—";
+
+        // Doughnut chart
+        renderDoughnut(d.selesai ?? 0, d.diproses ?? 0, d.belum ?? 0);
+      });
+
+    /* ══════════════════════════════════════
+     2. DOUGHNUT STATUS
+  ══════════════════════════════════════ */
+    function renderDoughnut(selesai, diproses, belum) {
+      const labels = ["Selesai", "Diproses", "Belum Ditangani"];
+      const data = [selesai, diproses, belum];
+      const colors = ["#10B981", "#F59E0B", "#3B82F6"];
+
+      new Chart(document.getElementById("chartStatus").getContext("2d"), {
+        type: "doughnut",
+        data: {
+          labels,
+          datasets: [{ data, backgroundColor: colors, borderWidth: 2 }],
+        },
+        options: {
+          cutout: "62%",
+          plugins: { legend: { display: false } },
+        },
+      });
+
+      const legend = document.getElementById("legend-status");
+      labels.forEach((l, i) => {
+        legend.insertAdjacentHTML(
+          "beforeend",
+          `
+        <li class="d-flex justify-content-between mb-1">
+          <span><i class="fas fa-circle mr-1" style="color:${colors[i]}"></i>${l}</span>
+          <strong>${data[i]}</strong>
+        </li>`,
+        );
+      });
+    }
+
+    /* ══════════════════════════════════════
+     3. TREN 7 HARI
+  ══════════════════════════════════════ */
+    fetch("/api/petugas/dashboard/tren7")
+      .then((r) => r.json())
+      .then((rows) => {
+        new Chart(document.getElementById("chartTren7").getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: rows.map((r) => r.tgl),
+            datasets: [
+              {
+                label: "Selesai",
+                data: rows.map((r) => r.selesai),
+                backgroundColor: "#10B981",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, ticks: { stepSize: 1 } },
+            },
+          },
+        });
+      });
+
+    /* ══════════════════════════════════════
+     4. LIST PRIORITAS TINGGI
+  ══════════════════════════════════════ */
+    fetch("/api/petugas/dashboard/prioritas-tinggi")
+      .then((r) => r.json())
+      .then((rows) => {
+        const ul = document.getElementById("list-prioritas-tinggi");
+        document.getElementById("badge-tinggi").textContent = rows.length;
+        ul.innerHTML = "";
+
+        if (!rows.length) {
+          ul.innerHTML = `<li class="list-group-item text-center text-success">
+          <i class="fas fa-check-circle mr-1"></i> Tidak ada tugas prioritas tinggi
+        </li>`;
+          return;
+        }
+
+        rows.forEach((p) => {
+          const hari = selisihHari(p.dibuat_pada);
+          ul.insertAdjacentHTML(
+            "beforeend",
+            `
+          <li class="list-group-item list-group-item-action px-3 py-2">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <a href="/petugas/pengaduan/${p.id}" class="font-weight-bold text-dark">
+                  ${p.judul}
+                </a>
+                <div class="text-muted small mt-1">
+                  <i class="fas fa-map-marker-alt mr-1"></i>${p.lokasi || "—"}
+                </div>
+              </div>
+              <div class="text-right ml-2">
+                <span class="badge" style="background:${p.warna_status};color:#fff;">
+                  ${p.status}
+                </span>
+                ${hari !== null ? `<div class="text-muted small mt-1">${hari} hari lalu</div>` : ""}
+              </div>
+            </div>
+          </li>`,
+          );
+        });
+      });
+
+    /* ══════════════════════════════════════
+     5. LIST BARU DITUGASKAN
+  ══════════════════════════════════════ */
+    fetch("/api/petugas/dashboard/baru-ditugaskan")
+      .then((r) => r.json())
+      .then((rows) => {
+        const ul = document.getElementById("list-baru-ditugaskan");
+        ul.innerHTML = "";
+
+        if (!rows.length) {
+          ul.innerHTML = `<li class="list-group-item text-center text-muted">
+          Tidak ada tugas baru.
+        </li>`;
+          return;
+        }
+
+        rows.forEach((p) => {
+          const prio = PRIO[p.prioritas] || PRIO[2];
+          ul.insertAdjacentHTML(
+            "beforeend",
+            `
+          <li class="list-group-item list-group-item-action px-3 py-2">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <a href="/petugas/pengaduan/${p.id}" class="font-weight-bold text-dark">
+                  ${p.judul}
+                </a>
+                <div class="text-muted small">
+                  <span class="badge ${prio.cls} mr-1">${prio.label}</span>
+                  ${p.kategori}
+                </div>
+              </div>
+              <small class="text-muted text-right ml-2">${fmtTgl(p.dibuat_pada)}</small>
+            </div>
+          </li>`,
+          );
+        });
+      });
+
+    /* ══════════════════════════════════════
+     6. TABEL TUGAS AKTIF
+  ══════════════════════════════════════ */
+    fetch("/api/petugas/dashboard/tugas-aktif")
+      .then((r) => r.json())
+      .then((rows) => {
+        const tbody = document.getElementById("tbody-tugas-aktif");
+        tbody.innerHTML = "";
+
+        if (!rows.length) {
+          tbody.innerHTML = `<tr>
+          <td colspan="8" class="text-center text-muted py-4">
+            <i class="fas fa-check-circle text-success mr-1"></i>
+            Tidak ada tugas aktif saat ini.
+          </td>
+        </tr>`;
+          return;
+        }
+
+        rows.forEach((p, i) => {
+          const prio = PRIO[p.prioritas] || PRIO[2];
+          const hari = selisihHari(p.dibuat_pada);
+          const tr = document.createElement("tr");
+
+          // Warnai baris jika sudah lama tidak diselesaikan
+          if (hari !== null && hari >= 3) tr.classList.add("table-warning");
+          if (hari !== null && hari >= 7) tr.classList.add("table-danger");
+
+          tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td>
+            <a href="/petugas/pengaduan/${p.id}" class="font-weight-bold text-dark">
+              ${p.judul}
+            </a>
+            ${hari >= 3 ? `<span class="badge badge-danger ml-1 text-xs">${hari}h</span>` : ""}
+          </td>
+          <td><span class="badge badge-secondary">${p.kategori}</span></td>
+          <td class="text-truncate" style="max-width:120px;" title="${p.lokasi || ""}">${p.lokasi || "—"}</td>
+          <td><span class="badge ${prio.cls}">${prio.label}</span></td>
+          <td>
+            <span class="badge" style="background:${p.warna_status};color:#fff;">
+              ${p.status}
+            </span>
+          </td>
+          <td>${fmtTgl(p.dibuat_pada)}</td>
+          <td>
+            <a href="/petugas/pengaduan/${p.id}" class="btn btn-xs btn-info">
+              <i class="fas fa-eye"></i>
+            </a>
+            ${
+              p.status_kode === "PROSES"
+                ? `
+            <button class="btn btn-xs btn-success btn-selesaikan" data-id="${p.id}">
+              <i class="fas fa-check"></i>
+            </button>`
+                : `
+            <button class="btn btn-xs btn-warning btn-mulai" data-id="${p.id}">
+              <i class="fas fa-play"></i>
+            </button>`
+            }
+          </td>
+        `;
+          tbody.appendChild(tr);
+        });
+      });
+
+    /* ── Aksi cepat dari tabel ── */
+    document
+      .getElementById("tbody-tugas-aktif")
+      .addEventListener("click", function (e) {
+        const btnMulai = e.target.closest(".btn-mulai");
+        const btnSelesai = e.target.closest(".btn-selesaikan");
+
+        if (btnMulai) {
+          if (!confirm("Tandai pengaduan ini sedang diproses?")) return;
+          ubahStatus(btnMulai.dataset.id, "PROSES");
+        }
+        if (btnSelesai) {
+          if (!confirm("Tandai pengaduan ini sudah selesai?")) return;
+          ubahStatus(btnSelesai.dataset.id, "SELESAI");
+        }
+      });
+
+    function ubahStatus(id, kode) {
+      fetch(`/api/pengaduan/${id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kode }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (window.toastr) toastr.success(d.message || "Status diperbarui");
+          // reload halaman untuk refresh semua widget
+          setTimeout(() => location.reload(), 800);
+        })
+        .catch(() => {
+          if (window.toastr) toastr.error("Gagal memperbarui status");
+        });
+    }
+  });
+</script>
+{% endblock %}

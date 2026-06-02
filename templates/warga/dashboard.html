@@ -1,0 +1,443 @@
+{% extends 'layout/templates.html' %} {% block content %}
+
+<!-- Selamat datang -->
+<div class="alert alert-light border-left border-primary border-3 mb-4 py-3">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-user-circle fa-2x text-primary mr-3"></i>
+    <div>
+      <h5 class="mb-0 font-weight-bold">
+        Selamat datang, {{ session['user']['nama'] }}
+      </h5>
+      <small class="text-muted"
+        >Pantau dan kelola pengaduan Anda di sini.</small
+      >
+    </div>
+    <div class="ml-auto">
+      <a href="/warga/pengaduan/buat" class="btn btn-primary">
+        <i class="fas fa-plus-circle mr-1"></i> Buat Pengaduan
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SUMMARY CARDS ===== -->
+<div class="row">
+  <div class="col-lg-3 col-6">
+    <div class="small-box bg-info">
+      <div class="inner">
+        <h3 id="s-total">—</h3>
+        <p>Total Pengaduan</p>
+      </div>
+      <div class="icon"><i class="fas fa-inbox"></i></div>
+      <a href="/warga/pengaduan" class="small-box-footer">
+        Lihat Semua <i class="fas fa-arrow-circle-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-6">
+    <div class="small-box bg-warning">
+      <div class="inner">
+        <h3 id="s-proses">—</h3>
+        <p>Sedang Diproses</p>
+      </div>
+      <div class="icon"><i class="fas fa-spinner"></i></div>
+      <a href="/warga/pengaduan" class="small-box-footer">
+        Lihat Detail <i class="fas fa-arrow-circle-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-6">
+    <div class="small-box bg-success">
+      <div class="inner">
+        <h3 id="s-selesai">—</h3>
+        <p>Selesai</p>
+      </div>
+      <div class="icon"><i class="fas fa-check-circle"></i></div>
+      <a href="/warga/pengaduan" class="small-box-footer">
+        Lihat Detail <i class="fas fa-arrow-circle-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-6">
+    <div class="small-box bg-danger">
+      <div class="inner">
+        <h3 id="s-ditolak">—</h3>
+        <p>Ditolak</p>
+      </div>
+      <div class="icon"><i class="fas fa-times-circle"></i></div>
+      <a href="/warga/pengaduan" class="small-box-footer">
+        Lihat Detail <i class="fas fa-arrow-circle-right"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ROW 2: Status terbaru + Doughnut ===== -->
+<div class="row">
+  <!-- Pengaduan terbaru dengan timeline status -->
+  <div class="col-md-7">
+    <div class="card card-outline card-primary">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-history mr-1"></i> Pengaduan Terbaru Saya
+        </h3>
+        <div class="card-tools">
+          <a href="/warga/pengaduan" class="btn btn-sm btn-primary">
+            <i class="fas fa-list"></i> Semua
+          </a>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush" id="list-terbaru">
+          <li class="list-group-item text-center text-muted py-4">
+            <i class="fas fa-spinner fa-spin"></i> Memuat...
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Doughnut sebaran status -->
+  <div class="col-md-5">
+    <div class="card card-outline card-info">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-chart-pie mr-1"></i> Status Pengaduan Saya
+        </h3>
+      </div>
+      <div class="card-body text-center" id="wrap-doughnut">
+        <canvas
+          id="chartStatus"
+          style="max-width: 200px; max-height: 200px; margin: 0 auto"
+        ></canvas>
+        <ul class="list-unstyled mt-3 text-left" id="legend-status"></ul>
+      </div>
+      <!-- Tampilan kosong jika belum ada pengaduan -->
+      <div class="card-body text-center d-none" id="wrap-kosong">
+        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+        <p class="text-muted">Belum ada pengaduan.</p>
+        <a href="/warga/pengaduan/buat" class="btn btn-primary btn-sm">
+          <i class="fas fa-plus-circle mr-1"></i> Buat Sekarang
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ROW 3: Notifikasi update + Panduan ===== -->
+<div class="row">
+  <!-- Notifikasi / update terbaru pada pengaduan -->
+  <div class="col-md-7">
+    <div class="card card-outline card-warning">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-bell mr-1 text-warning"></i> Update Terbaru
+        </h3>
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush" id="list-update">
+          <li class="list-group-item text-center text-muted py-3">
+            <i class="fas fa-spinner fa-spin"></i> Memuat...
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panduan alur pengaduan -->
+  <div class="col-md-5">
+    <div class="card card-outline card-success">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-map-signs mr-1"></i> Alur Pengaduan
+        </h3>
+      </div>
+      <div class="card-body p-3">
+        <div class="timeline timeline-inverse">
+          <div class="time-label">
+            <span class="bg-primary">Proses</span>
+          </div>
+
+          <div>
+            <i class="fas fa-circle text-primary"></i>
+            <div class="timeline-item">
+              <h3 class="timeline-header">1. Buat Pengaduan</h3>
+              <div class="timeline-body text-muted small">
+                Isi judul, deskripsi, lokasi, dan kategori pengaduan Anda.
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <i class="fas fa-circle" style="color: #8b5cf6"></i>
+            <div class="timeline-item">
+              <h3 class="timeline-header">2. Verifikasi Admin</h3>
+              <div class="timeline-body text-muted small">
+                Admin akan memverifikasi kelengkapan laporan Anda.
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <i class="fas fa-circle text-warning"></i>
+            <div class="timeline-item">
+              <h3 class="timeline-header">3. Penanganan Petugas</h3>
+              <div class="timeline-body text-muted small">
+                Petugas yang ditugaskan akan menangani pengaduan di lapangan.
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <i class="fas fa-circle text-success"></i>
+            <div class="timeline-item">
+              <h3 class="timeline-header">4. Selesai</h3>
+              <div class="timeline-body text-muted small">
+                Anda akan mendapat notifikasi saat pengaduan selesai ditangani.
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <i class="fas fa-clock text-muted"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %} {% block js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const STATUS_COLOR = {
+      MASUK: "#3B82F6",
+      VERIFIKASI: "#8B5CF6",
+      PROSES: "#F59E0B",
+      SELESAI: "#10B981",
+      DITOLAK: "#EF4444",
+    };
+
+    const PRIO = {
+      1: { label: "Rendah", cls: "badge-secondary" },
+      2: { label: "Sedang", cls: "badge-warning" },
+      3: { label: "Tinggi", cls: "badge-danger" },
+    };
+
+    function fmtTgl(str) {
+      if (!str) return "—";
+      return new Date(str).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    }
+
+    function fmtWaktu(str) {
+      if (!str) return "—";
+      return new Date(str).toLocaleString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
+    function selisihHari(str) {
+      if (!str) return null;
+      return Math.floor((Date.now() - new Date(str).getTime()) / 86400000);
+    }
+
+    /* ══════════════════════════════════════
+     1. RINGKASAN
+  ══════════════════════════════════════ */
+    fetch("/api/warga/dashboard/ringkasan")
+      .then((r) => r.json())
+      .then((d) => {
+        document.getElementById("s-total").textContent = d.total ?? 0;
+        document.getElementById("s-proses").textContent = d.diproses ?? 0;
+        document.getElementById("s-selesai").textContent = d.selesai ?? 0;
+        document.getElementById("s-ditolak").textContent = d.ditolak ?? 0;
+
+        // Doughnut
+        if (d.total > 0) {
+          renderDoughnut(d.per_status || []);
+        } else {
+          document.getElementById("wrap-doughnut").classList.add("d-none");
+          document.getElementById("wrap-kosong").classList.remove("d-none");
+        }
+      });
+
+    /* ══════════════════════════════════════
+     2. DOUGHNUT
+  ══════════════════════════════════════ */
+    function renderDoughnut(perStatus) {
+      const labels = perStatus.map((s) => s.nama);
+      const counts = perStatus.map((s) => s.jumlah);
+      const colors = perStatus.map((s) => s.warna);
+
+      new Chart(document.getElementById("chartStatus").getContext("2d"), {
+        type: "doughnut",
+        data: {
+          labels,
+          datasets: [{ data: counts, backgroundColor: colors, borderWidth: 2 }],
+        },
+        options: {
+          cutout: "62%",
+          plugins: { legend: { display: false } },
+        },
+      });
+
+      const legend = document.getElementById("legend-status");
+      perStatus.forEach((s) => {
+        legend.insertAdjacentHTML(
+          "beforeend",
+          `
+        <li class="d-flex justify-content-between mb-1">
+          <span><i class="fas fa-circle mr-1" style="color:${s.warna}"></i>${s.nama}</span>
+          <strong>${s.jumlah}</strong>
+        </li>`,
+        );
+      });
+    }
+
+    /* ══════════════════════════════════════
+     3. PENGADUAN TERBARU
+  ══════════════════════════════════════ */
+    fetch("/api/warga/dashboard/terbaru")
+      .then((r) => r.json())
+      .then((rows) => {
+        const ul = document.getElementById("list-terbaru");
+        ul.innerHTML = "";
+
+        if (!rows.length) {
+          ul.innerHTML = `
+          <li class="list-group-item text-center py-4">
+            <i class="fas fa-inbox fa-2x text-muted mb-2 d-block"></i>
+            <span class="text-muted">Belum ada pengaduan.</span><br>
+            <a href="/warga/pengaduan/buat" class="btn btn-primary btn-sm mt-2">
+              <i class="fas fa-plus-circle mr-1"></i> Buat Pengaduan
+            </a>
+          </li>`;
+          return;
+        }
+
+        rows.forEach((p) => {
+          const prio = PRIO[p.prioritas] || PRIO[2];
+          const hari = selisihHari(p.dibuat_pada);
+          ul.insertAdjacentHTML(
+            "beforeend",
+            `
+          <li class="list-group-item list-group-item-action px-3 py-3">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-1">
+                  <a href="/warga/pengaduan/${p.id}"
+                     class="font-weight-bold text-dark mr-2">${p.judul}</a>
+                  <span class="badge ${prio.cls}">${prio.label}</span>
+                </div>
+                <div class="text-muted small">
+                  <i class="fas fa-tag mr-1"></i>${p.kategori}
+                  ${p.lokasi ? `<span class="mx-1">·</span><i class="fas fa-map-marker-alt mr-1"></i>${p.lokasi}` : ""}
+                </div>
+                <!-- Mini timeline status -->
+                <div class="mt-2 d-flex align-items-center flex-wrap" id="timeline-${p.id}">
+                  ${renderMiniTimeline(p.status_kode)}
+                </div>
+              </div>
+              <div class="text-right ml-3">
+                <span class="badge px-2 py-1"
+                      style="background:${p.warna_status};color:#fff;font-size:.78rem;">
+                  ${p.status}
+                </span>
+                <div class="text-muted small mt-1">${fmtTgl(p.dibuat_pada)}</div>
+              </div>
+            </div>
+          </li>`,
+          );
+        });
+      });
+
+    function renderMiniTimeline(kode) {
+      const steps = [
+        { kode: "MASUK", label: "Masuk", warna: "#3B82F6" },
+        { kode: "VERIFIKASI", label: "Verifikasi", warna: "#8B5CF6" },
+        { kode: "PROSES", label: "Proses", warna: "#F59E0B" },
+        { kode: "SELESAI", label: "Selesai", warna: "#10B981" },
+      ];
+
+      const urutan = steps.map((s) => s.kode);
+      const idxAktif = urutan.indexOf(kode);
+
+      if (kode === "DITOLAK") {
+        return `<span class="badge badge-danger">Ditolak</span>`;
+      }
+
+      return steps
+        .map((s, i) => {
+          const done = i <= idxAktif;
+          const aktif = i === idxAktif;
+          const color = done ? s.warna : "#D1D5DB";
+          const border = aktif ? `2px solid ${s.warna}` : "none";
+          return `
+        <div class="d-flex align-items-center mr-1">
+          <span class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                style="width:20px;height:20px;background:${color};border:${border};font-size:9px;color:#fff;">
+            ${done ? '<i class="fas fa-check"></i>' : i + 1}
+          </span>
+          <span class="ml-1 small" style="color:${color};font-size:.7rem;">${s.label}</span>
+          ${i < steps.length - 1 ? `<span class="mx-1 text-muted">›</span>` : ""}
+        </div>`;
+        })
+        .join("");
+    }
+
+    /* ══════════════════════════════════════
+     4. UPDATE / KOMENTAR TERBARU
+  ══════════════════════════════════════ */
+    fetch("/api/warga/dashboard/update-terbaru")
+      .then((r) => r.json())
+      .then((rows) => {
+        const ul = document.getElementById("list-update");
+        ul.innerHTML = "";
+
+        if (!rows.length) {
+          ul.innerHTML = `<li class="list-group-item text-center text-muted py-3">
+          Belum ada update pada pengaduan Anda.
+        </li>`;
+          return;
+        }
+
+        rows.forEach((u) => {
+          ul.insertAdjacentHTML(
+            "beforeend",
+            `
+          <li class="list-group-item list-group-item-action px-3 py-2">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="font-weight-bold small text-truncate" style="max-width:280px;">
+                  <i class="fas fa-comment-dots text-warning mr-1"></i>
+                  ${u.judul_pengaduan}
+                </div>
+                <div class="text-muted small mt-1">${u.isi}</div>
+                <div class="mt-1">
+                  <small class="text-muted">
+                    <i class="fas fa-user mr-1"></i>${u.nama_pengirim}
+                  </small>
+                </div>
+              </div>
+              <small class="text-muted ml-2 text-nowrap">${fmtWaktu(u.dibuat_pada)}</small>
+            </div>
+          </li>`,
+          );
+        });
+      });
+  });
+</script>
+{% endblock %}

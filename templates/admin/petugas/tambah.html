@@ -1,0 +1,169 @@
+{% extends 'layout/templates.html' %} {% block content %}
+<div class="card card-success">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-plus"></i> {{title}}</h3>
+  </div>
+  <form id="form" method="post">
+    <div class="card-body">
+      <!-- Nama -->
+      <div class="form-group">
+        <label for="nama">Nama Lengkap</label>
+        <input
+          type="text"
+          name="nama"
+          id="nama"
+          class="form-control"
+          placeholder="Masukkan nama lengkap....."
+        />
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          name="email"
+          id="email"
+          class="form-control"
+          placeholder="Masukkan email....."
+        />
+      </div>
+
+      <!-- Kontak -->
+      <div class="form-group">
+        <label for="kontak">No. Telepon</label>
+        <input
+          type="number"
+          name="kontak"
+          id="kontak"
+          class="form-control"
+          placeholder="Masukkan nomor telepon....."
+        />
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          name="password"
+          id="password"
+          class="form-control"
+          placeholder="Masukkan password....."
+        />
+      </div>
+
+      <!-- Unit Kerja -->
+      <div class="form-group">
+        <label for="unit_kerja">Unit Kerja</label>
+        <input
+          type="text"
+          name="unit_kerja"
+          id="unit_kerja"
+          class="form-control"
+          placeholder="Masukkan unit kerja....."
+        />
+      </div>
+
+      <!-- Jabatan -->
+      <div class="form-group">
+        <label for="jabatan">Jabatan</label>
+        <input
+          type="text"
+          name="jabatan"
+          id="jabatan"
+          class="form-control"
+          placeholder="Masukkan jabatan....."
+        />
+      </div>
+    </div>
+    <div class="card-footer">
+      <button type="button" id="saveBtn" class="btn btn-primary">
+        <i class="fas fa-save"></i> Simpan
+      </button>
+      <a href="/admin/petugas" class="btn btn-secondary">
+        <i class="fas fa-reply"></i> Kembali
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %} {% block js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("form");
+    const saveBtn = document.getElementById("saveBtn");
+
+    function setLoading(on) {
+      if (saveBtn) {
+        saveBtn.disabled = on;
+        saveBtn.innerHTML = on
+          ? '<i class="fas fa-spinner fa-spin"></i> Menyimpan...'
+          : '<i class="fas fa-save"></i> Simpan';
+      }
+    }
+
+    function submitPayload() {
+      const nama = document.getElementById("nama").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const kontak = document.getElementById("kontak").value.trim();
+      const password = document.getElementById("password").value;
+      const unit_kerja = document.getElementById("unit_kerja").value.trim();
+      const jabatan = document.getElementById("jabatan").value.trim();
+
+      // Validasi sisi klien
+      if (!nama) {
+        if (window.toastr) toastr.error("Nama wajib diisi");
+        return;
+      }
+      if (!password) {
+        if (window.toastr) toastr.error("Password wajib diisi");
+        return;
+      }
+      if (!unit_kerja) {
+        if (window.toastr) toastr.error("Unit kerja wajib diisi");
+        return;
+      }
+      if (!jabatan) {
+        if (window.toastr) toastr.error("Jabatan wajib diisi");
+        return;
+      }
+
+      const payload = { nama, email, kontak, password, unit_kerja, jabatan };
+      setLoading(true);
+
+      fetch("/api/petugas/insert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          setLoading(false);
+          if (window.toastr)
+            toastr.success(data.message || "Berhasil disimpan");
+          setTimeout(() => (window.location.href = "/admin/petugas"), 800);
+        })
+        .catch((err) => {
+          setLoading(false);
+          console.error("Save failed", err);
+          if (window.toastr) toastr.error("Gagal menyimpan data");
+        });
+    }
+
+    if (saveBtn) {
+      saveBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        submitPayload();
+      });
+    }
+
+    if (form) {
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        submitPayload();
+      });
+      form.setAttribute("action", "javascript:void(0);");
+    }
+  });
+</script>
+{% endblock %}
