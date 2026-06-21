@@ -1,0 +1,242 @@
+-- --------------------------------------------------------
+-- Host:                         127.0.0.1
+-- Server version:               8.4.3 - MySQL Community Server - GPL
+-- Server OS:                    Win64
+-- HeidiSQL Version:             12.8.0.6908
+-- --------------------------------------------------------
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET NAMES utf8 */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+
+-- Dumping database structure for pengaduan_db
+DROP DATABASE IF EXISTS `pengaduan_db`;
+CREATE DATABASE IF NOT EXISTS `pengaduan_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `pengaduan_db`;
+
+-- Dumping structure for table pengaduan_db.kategori
+DROP TABLE IF EXISTS `kategori`;
+CREATE TABLE IF NOT EXISTS `kategori` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `nama` varchar(100) NOT NULL,
+  `deskripsi` text,
+  `ikon` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_kategori_nama` (`nama`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Dumping data for table pengaduan_db.kategori: ~6 rows (approximately)
+INSERT INTO `kategori` (`id`, `nama`, `deskripsi`, `ikon`) VALUES
+	(1, 'Infrastruktur', 'Jalan, jembatan, drainase, dll.', 'road'),
+	(2, 'Kebersihan', 'Sampah, limbah, sanitasi.', 'trash'),
+	(3, 'Keamanan', 'Kriminal, ketertiban umum.', 'shield'),
+	(4, 'Pelayanan Publik', 'Administrasi, birokrasi.', 'building'),
+	(5, 'Lingkungan', 'Polusi, RTH, bencana.', 'tree'),
+	(6, 'Lain-lain', 'Di luar kategori di atas.', 'dots');
+
+-- Dumping structure for table pengaduan_db.komentar
+DROP TABLE IF EXISTS `komentar`;
+CREATE TABLE IF NOT EXISTS `komentar` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pengaduan_id` int unsigned NOT NULL,
+  `pengguna_id` int unsigned NOT NULL,
+  `isi` text NOT NULL,
+  `adalah_internal` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 = hanya terlihat petugas/admin',
+  `dibuat_pada` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_komentar_pengaduan` (`pengaduan_id`),
+  KEY `idx_komentar_pengguna` (`pengguna_id`),
+  CONSTRAINT `fk_komentar_pengaduan` FOREIGN KEY (`pengaduan_id`) REFERENCES `pengaduan` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_komentar_pengguna` FOREIGN KEY (`pengguna_id`) REFERENCES `pengguna` (`id`) ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Dumping data for table pengaduan_db.komentar: ~22 rows (approximately)
+INSERT INTO `komentar` (`id`, `pengaduan_id`, `pengguna_id`, `isi`, `adalah_internal`, `dibuat_pada`) VALUES
+	(1, 1, 2, 'Pengaduan diterima, akan segera kami tindak lanjuti.', 0, '2026-05-22 04:30:21'),
+	(2, 1, 3, 'Terima kasih, ditunggu ya pak.', 0, '2026-05-22 04:30:21'),
+	(3, 1, 2, 'Catatan internal: jadwalkan survei lapangan Senin depan.', 1, '2026-05-22 04:30:21'),
+	(4, 1, 1, 'test', 0, '2026-05-28 02:31:01'),
+	(5, 2, 1, '[DITOLAK] informasi palsu', 1, '2026-05-28 02:32:42'),
+	(6, 2, 1, 'Hanya informasi palsu/ hoax', 0, '2026-05-28 02:33:44'),
+	(7, 4, 6, 'hai', 0, '2026-05-29 02:15:51'),
+	(8, 4, 1, 'tolong pada saat membuat laporan, buatlah laporan yang jelas agar kami dapat menindak lanjutinya dengan mudah', 0, '2026-05-29 02:19:57'),
+	(9, 4, 6, 'wkwkwkwkwkwk', 0, '2026-05-29 02:21:05'),
+	(10, 1, 2, 'bapak santoso, waktu bapak ke pelayanan pembuatan KTP, siapa yang bertugas di sana?', 0, '2026-05-29 02:50:03'),
+	(11, 4, 1, 'Pengaduan ditugaskan kepada Petugas Satu.', 1, '2026-05-29 02:52:04'),
+	(12, 4, 2, 'bapak ricky tolong kerjasamanya', 0, '2026-05-29 02:53:20'),
+	(13, 4, 6, 'baik pak, begini pak', 0, '2026-05-29 02:54:34'),
+	(14, 4, 6, 'saya hanya sedang mencoba apakah layananan pengaduan ini mau merespon masyarakat', 0, '2026-05-29 02:56:16'),
+	(15, 4, 2, 'baik, kami mengerti pak.  jadi bagaimana pendapat bapak ricky', 0, '2026-05-29 02:57:30'),
+	(16, 4, 6, 'sejauh ini saya masih percaya akan pelayanan ini, semoga dengan adanya pelayanan pengaduan ini. desa kita semakin lebih dari hari hari yang lalu', 0, '2026-05-29 02:59:31'),
+	(17, 4, 2, 'okeyy bapak, terimakasih dan kami juga berharap demikian pak', 0, '2026-05-29 03:00:16'),
+	(18, 4, 2, 'apakah laporan ini sudah bisa kami tutup bapak?', 0, '2026-05-29 03:00:37'),
+	(19, 4, 1, 'penanganan yang bagus sekali', 0, '2026-05-29 03:01:27'),
+	(20, 4, 6, 'baik silahkan pak', 0, '2026-05-29 03:02:03'),
+	(21, 4, 1, 'baik terimaskih pak', 0, '2026-05-29 03:02:20'),
+	(22, 3, 1, 'coba tanyakan,  siapa yang bertugas pas dia mencoba membuat ktp', 1, '2026-05-29 03:05:46');
+
+-- Dumping structure for table pengaduan_db.lampiran
+DROP TABLE IF EXISTS `lampiran`;
+CREATE TABLE IF NOT EXISTS `lampiran` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pengaduan_id` int unsigned NOT NULL,
+  `nama_file` varchar(255) NOT NULL,
+  `tipe_file` varchar(100) NOT NULL,
+  `url_file` varchar(500) NOT NULL,
+  `ukuran_byte` int unsigned DEFAULT NULL,
+  `diunggah_pada` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_lampiran_pengaduan` (`pengaduan_id`),
+  CONSTRAINT `fk_lampiran_pengaduan` FOREIGN KEY (`pengaduan_id`) REFERENCES `pengaduan` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Dumping data for table pengaduan_db.lampiran: ~0 rows (approximately)
+
+-- Dumping structure for table pengaduan_db.pengaduan
+DROP TABLE IF EXISTS `pengaduan`;
+CREATE TABLE IF NOT EXISTS `pengaduan` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pengguna_id` int unsigned NOT NULL,
+  `kategori_id` int unsigned NOT NULL,
+  `status_id` int unsigned NOT NULL DEFAULT '1',
+  `petugas_id` int unsigned DEFAULT NULL,
+  `judul` varchar(255) NOT NULL,
+  `deskripsi` text NOT NULL,
+  `lokasi` varchar(255) DEFAULT NULL,
+  `latitude` decimal(10,7) DEFAULT NULL,
+  `longitude` decimal(10,7) DEFAULT NULL,
+  `prioritas` tinyint unsigned NOT NULL DEFAULT '2' COMMENT '1=rendah 2=sedang 3=tinggi',
+  `dibuat_pada` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `diperbarui_pada` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `diselesaikan_pada` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_pengaduan_pengguna` (`pengguna_id`),
+  KEY `idx_pengaduan_status` (`status_id`),
+  KEY `idx_pengaduan_kategori` (`kategori_id`),
+  KEY `idx_pengaduan_petugas` (`petugas_id`),
+  KEY `idx_pengaduan_dibuat` (`dibuat_pada`),
+  CONSTRAINT `fk_pengaduan_kategori` FOREIGN KEY (`kategori_id`) REFERENCES `kategori` (`id`) ON UPDATE CASCADE,
+  CONSTRAINT `fk_pengaduan_pengguna` FOREIGN KEY (`pengguna_id`) REFERENCES `pengguna` (`id`) ON UPDATE CASCADE,
+  CONSTRAINT `fk_pengaduan_petugas` FOREIGN KEY (`petugas_id`) REFERENCES `petugas` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_pengaduan_status` FOREIGN KEY (`status_id`) REFERENCES `status` (`id`) ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Dumping data for table pengaduan_db.pengaduan: ~4 rows (approximately)
+INSERT INTO `pengaduan` (`id`, `pengguna_id`, `kategori_id`, `status_id`, `petugas_id`, `judul`, `deskripsi`, `lokasi`, `latitude`, `longitude`, `prioritas`, `dibuat_pada`, `diperbarui_pada`, `diselesaikan_pada`) VALUES
+	(1, 3, 1, 4, 1, 'Jalan berlubang di Jl. Merdeka', 'Terdapat lubang besar di Jl. Merdeka depan nomor 12 yang membahayakan pengendara.', 'Jl. Merdeka No.12, Kec. Medan Kota', NULL, NULL, 3, '2026-05-22 04:30:21', '2026-05-29 02:30:27', '2026-05-29 02:30:27'),
+	(2, 4, 2, 5, NULL, 'Tumpukan sampah liar di Gang Mawar', 'Sampah menumpuk dan menimbulkan bau tidak sedap.', 'Gang Mawar RT 04 RW 02', NULL, NULL, 2, '2026-05-22 04:30:21', '2026-05-28 02:32:41', NULL),
+	(3, 3, 4, 3, 1, 'Pelayanan KTP lama sekali', 'Sudah 3 minggu KTP belum jadi padahal sudah dijanjikan 1 minggu.', 'Kantor Kecamatan Medan Baru', NULL, NULL, 2, '2026-05-22 04:30:21', '2026-05-28 02:45:42', NULL),
+	(4, 6, 1, 4, 1, 'fdfd', 'fdfdfd', 'fdfd', NULL, NULL, 1, '2026-05-29 02:15:14', '2026-05-29 03:02:59', '2026-05-29 03:02:59');
+
+-- Dumping structure for table pengaduan_db.pengguna
+DROP TABLE IF EXISTS `pengguna`;
+CREATE TABLE IF NOT EXISTS `pengguna` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `nama_lengkap` varchar(150) NOT NULL,
+  `email` varchar(150) NOT NULL,
+  `no_telepon` varchar(20) DEFAULT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `peran` enum('warga','petugas','admin') NOT NULL DEFAULT 'warga',
+  `aktif` tinyint(1) NOT NULL DEFAULT '1',
+  `dibuat_pada` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `diperbarui_pada` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_pengguna_email` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Dumping data for table pengaduan_db.pengguna: ~6 rows (approximately)
+INSERT INTO `pengguna` (`id`, `nama_lengkap`, `email`, `no_telepon`, `password_hash`, `peran`, `aktif`, `dibuat_pada`, `diperbarui_pada`) VALUES
+	(1, 'Admin Sistem', 'admin@pengaduan.id', '081200000001', 'scrypt:32768:8:1$xqarYDg12sikCb4w$bede221441de7e2bc69422db7870f2e25f69ce7d59770f1457b9e77c00f1f0d416ed89563a3cda9b792773ad10337296ef27ba704da52f57a5691d084e98ae38', 'admin', 1, '2026-05-22 04:30:21', '2026-05-25 10:37:11'),
+	(2, 'Petugas Satu', 'petugas@pengaduan.id', '081200000002', 'scrypt:32768:8:1$rWab63UlJv83IP1v$2d621809b6f84b0e3a059a1747c3dfd8dbd0ecd6245a400cc89bb3d23d68b28f03be5d6bb79cf97bb6e05e1c191c7d494791acbc8e00f50b9e46facc754c2e51', 'petugas', 1, '2026-05-22 04:30:21', '2026-05-26 05:31:25'),
+	(3, 'Budi Santoso', 'budi@contoh.id', '081200000003', '$2b$12$demoHashWarga1', 'warga', 1, '2026-05-22 04:30:21', '2026-05-22 04:30:21'),
+	(4, 'Siti Rahayu', 'siti@contoh.id', '081200000004', '$2b$12$demoHashWarga2', 'warga', 1, '2026-05-22 04:30:21', '2026-05-22 04:30:21'),
+	(6, 'ricky', 'ricky@harahap.com', '0843434343', 'scrypt:32768:8:1$SsNp1R1fDMQFRXIK$5784977b5271ccdf2f2ba40961ba70a223ca437230617207932199887d8f2bcffbc3eb3141ceff742359b5b59ff5f0a8d5f7d2e0ff855c4d2356491026f9e372', 'warga', 0, '2026-05-26 04:46:51', '2026-05-26 05:39:29'),
+	(7, 'ricky muhammad harahap', 'harahap@gmail.com', '08766655', 'scrypt:32768:8:1$0h02XnVqacJYUnNZ$5e809806cb3aa7069e37949f16241e3ca3a40388682ede4e15a5d2b4a90e39e65a981e7c1fbb44e7ddbe44663afa6c7b0c1704f1da714ac3acd9721efce96360', 'petugas', 1, '2026-05-27 08:14:17', '2026-05-27 08:25:42');
+
+-- Dumping structure for table pengaduan_db.petugas
+DROP TABLE IF EXISTS `petugas`;
+CREATE TABLE IF NOT EXISTS `petugas` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `pengguna_id` int unsigned NOT NULL,
+  `unit_kerja` varchar(150) NOT NULL,
+  `jabatan` varchar(100) DEFAULT NULL,
+  `aktif` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_petugas_pengguna` (`pengguna_id`),
+  CONSTRAINT `fk_petugas_pengguna` FOREIGN KEY (`pengguna_id`) REFERENCES `pengguna` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Dumping data for table pengaduan_db.petugas: ~2 rows (approximately)
+INSERT INTO `petugas` (`id`, `pengguna_id`, `unit_kerja`, `jabatan`, `aktif`) VALUES
+	(1, 2, 'Dinas Pekerjaan Umum', 'Staf Teknis', 1),
+	(2, 7, 'IT Staff', 'IT Staff', 0);
+
+-- Dumping structure for table pengaduan_db.status
+DROP TABLE IF EXISTS `status`;
+CREATE TABLE IF NOT EXISTS `status` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `nama` varchar(50) NOT NULL,
+  `kode` varchar(20) NOT NULL,
+  `warna` varchar(7) NOT NULL DEFAULT '#6B7280',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_status_kode` (`kode`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Dumping data for table pengaduan_db.status: ~5 rows (approximately)
+INSERT INTO `status` (`id`, `nama`, `kode`, `warna`) VALUES
+	(1, 'Masuk', 'MASUK', '#3B82F6'),
+	(2, 'Diverifikasi', 'VERIFIKASI', '#8B5CF6'),
+	(3, 'Diproses', 'PROSES', '#F59E0B'),
+	(4, 'Selesai', 'SELESAI', '#10B981'),
+	(5, 'Ditolak', 'DITOLAK', '#EF4444');
+
+-- Dumping structure for view pengaduan_db.v_ringkasan_pengaduan
+DROP VIEW IF EXISTS `v_ringkasan_pengaduan`;
+-- Creating temporary table to overcome VIEW dependency errors
+CREATE TABLE `v_ringkasan_pengaduan` (
+	`id` INT UNSIGNED NULL,
+	`judul` VARCHAR(1) NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`lokasi` VARCHAR(1) NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`prioritas` TINYINT UNSIGNED NULL COMMENT '1=rendah 2=sedang 3=tinggi',
+	`dibuat_pada` TIMESTAMP NULL,
+	`diselesaikan_pada` TIMESTAMP NULL,
+	`pelapor` VARCHAR(1) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`kategori` VARCHAR(1) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`status` VARCHAR(1) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`warna_status` VARCHAR(1) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`unit_petugas` VARCHAR(1) NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`jumlah_lampiran` BIGINT NULL,
+	`jumlah_komentar` BIGINT NULL
+) ENGINE=MyISAM;
+
+-- Dumping structure for view pengaduan_db.v_statistik_kategori
+DROP VIEW IF EXISTS `v_statistik_kategori`;
+-- Creating temporary table to overcome VIEW dependency errors
+CREATE TABLE `v_statistik_kategori` (
+	`kategori` VARCHAR(1) NOT NULL COLLATE 'utf8mb4_0900_ai_ci',
+	`total` BIGINT NOT NULL,
+	`selesai` DECIMAL(23,0) NULL,
+	`diproses` DECIMAL(23,0) NULL,
+	`menunggu` DECIMAL(23,0) NULL,
+	`rata_penanganan_jam` DECIMAL(22,1) NULL
+) ENGINE=MyISAM;
+
+-- Removing temporary table and create final VIEW structure
+DROP TABLE IF EXISTS `v_ringkasan_pengaduan`;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `v_ringkasan_pengaduan` AS select `p`.`id` AS `id`,`p`.`judul` AS `judul`,`p`.`lokasi` AS `lokasi`,`p`.`prioritas` AS `prioritas`,`p`.`dibuat_pada` AS `dibuat_pada`,`p`.`diselesaikan_pada` AS `diselesaikan_pada`,`pg`.`nama_lengkap` AS `pelapor`,`k`.`nama` AS `kategori`,`s`.`nama` AS `status`,`s`.`warna` AS `warna_status`,`pt`.`unit_kerja` AS `unit_petugas`,(select count(0) from `lampiran` `l` where (`l`.`pengaduan_id` = `p`.`id`)) AS `jumlah_lampiran`,(select count(0) from `komentar` `km` where ((`km`.`pengaduan_id` = `p`.`id`) and (`km`.`adalah_internal` = 0))) AS `jumlah_komentar` from ((((`pengaduan` `p` join `pengguna` `pg` on((`pg`.`id` = `p`.`pengguna_id`))) join `kategori` `k` on((`k`.`id` = `p`.`kategori_id`))) join `status` `s` on((`s`.`id` = `p`.`status_id`))) left join `petugas` `pt` on((`pt`.`id` = `p`.`petugas_id`)));
+
+-- Removing temporary table and create final VIEW structure
+DROP TABLE IF EXISTS `v_statistik_kategori`;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `v_statistik_kategori` AS select `k`.`nama` AS `kategori`,count(`p`.`id`) AS `total`,sum((`s`.`kode` = 'SELESAI')) AS `selesai`,sum((`s`.`kode` = 'PROSES')) AS `diproses`,sum((`s`.`kode` in ('MASUK','VERIFIKASI'))) AS `menunggu`,round(avg(timestampdiff(HOUR,`p`.`dibuat_pada`,ifnull(`p`.`diselesaikan_pada`,now()))),1) AS `rata_penanganan_jam` from ((`kategori` `k` left join `pengaduan` `p` on((`p`.`kategori_id` = `k`.`id`))) left join `status` `s` on((`s`.`id` = `p`.`status_id`))) group by `k`.`id`,`k`.`nama`;
+
+/*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
+/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
+/*!40014 SET FOREIGN_KEY_CHECKS=IFNULL(@OLD_FOREIGN_KEY_CHECKS, 1) */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40111 SET SQL_NOTES=IFNULL(@OLD_SQL_NOTES, 1) */;
